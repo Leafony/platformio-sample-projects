@@ -1,14 +1,12 @@
-#include <Arduino.h>
-
 //=====================================================================
-//  Sound level meter
-//
-//    (c) 2022 LEAFONY SYSTEMS Co., Ltd
+//    (c) 2023 LEAFONY SYSTEMS Co., Ltd
 //    Released under the MIT license
 //    https://opensource.org/licenses/MIT
 //
-//      Rev.00 2021/04/01  First release
+//      Rev.00 2023/02/01  First release
 //=====================================================================
+#include <Arduino.h>
+
 #define LED1             6
 #define LED2             7
 #define LED3             8
