@@ -1,14 +1,12 @@
-#include <Arduino.h>
-
 //=====================================================================
-//  Human Sensing
-//
-//    (c) 2021 LEAFONY SYSTEMS Co., Ltd
+//    (c) 2023 LEAFONY SYSTEMS Co., Ltd
 //    Released under the MIT license
 //    https://opensource.org/licenses/MIT
 //
-//      Rev.00 2021/04/01  First release
+//      Rev.00 2023/02/01  First release
 //=====================================================================
+#include <Arduino.h>
+
 #include <Wire.h>
 
 #define I2C_PIR_ADDR   0x65
