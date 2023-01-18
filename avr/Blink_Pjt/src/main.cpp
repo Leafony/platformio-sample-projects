@@ -1,23 +1,18 @@
-#include <Arduino.h>
-
 //=====================================================================
-//  Blink
-//
-//    (c) 2021 LEAFONY SYSTEMS Co., Ltd
+//    (c) 2023 LEAFONY SYSTEMS Co., Ltd
 //    Released under the MIT license
 //    https://opensource.org/licenses/MIT
 //
-//      Rev.00 2021/04/01  First release
+//      Rev.00 2023/02/01  First release
 //=====================================================================
+#include <Arduino.h>
 
 void setup() {
-  // LEDピンを出力ピンに設定
-  pinMode(LED_BUILTIN, OUTPUT);
+  Serial.begin(115200);
+  delay(10);
 }
 
-void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);   // LEDを点灯
-  delay(1000);                       // 1秒待つ
-  digitalWrite(LED_BUILTIN, LOW);    // LEDを消灯
-  delay(1000);                       // 1秒待つ
+void loop(){
+  Serial.println("Hello World");
+  delay(1000);
 }
