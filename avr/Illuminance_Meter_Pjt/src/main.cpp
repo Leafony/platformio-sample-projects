@@ -1,15 +1,14 @@
-#include <Arduino.h>
-
 //=====================================================================
-//  Illuminance meter
-//
-//    (c) 2021 LEAFONY SYSTEMS Co., Ltd
+//    (c) 2023 LEAFONY SYSTEMS Co., Ltd
 //    Released under the MIT license
 //    https://opensource.org/licenses/MIT
 //
-//      Rev.00 2021/04/01  First release
+//      Rev.00 2023/02/01  First release
 //=====================================================================
+#include <Arduino.h>
+
 #include <Wire.h>
+
 #include <ClosedCube_OPT3001.h>
 
 #define OPT3001_ADDRESS 0x45      // ADDR pin = VCC
