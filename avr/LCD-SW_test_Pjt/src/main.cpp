@@ -1,25 +1,15 @@
-#include <Arduino.h>
-
 //=====================================================================
-//  Leafony Platform sample sketch
-//     Application  : LCD SW test
-//     Processor    : ATmega328P (3.3V /8MHz)
+//    (c) 2023 LEAFONY SYSTEMS Co., Ltd
+//    Released under the MIT license
+//    https://opensource.org/licenses/MIT
 //
-//     Leaf configuration
-//       (1) AI04 LCD
-//       (2) AP01 AVR MCU
-//       (3) AZ01 USB
-//
-//		(c) 2021 LEAFONY SYSTEMS Co., Ltd
-//		Released under the MIT license
-//		https://opensource.org/licenses/MIT
-//
-//      Rev.00 2021/04/01  First release
+//      Rev.00 2023/02/01  First release
 //=====================================================================
 // use libraries
 //  ST7032 - Arduino LiquidCrystal compatible library
 //    https://github.com/tomozh/arduino_ST7032
 //=====================================================================
+#include <Arduino.h>
 
 //---------------------------------------------------------------------
 // difinition
