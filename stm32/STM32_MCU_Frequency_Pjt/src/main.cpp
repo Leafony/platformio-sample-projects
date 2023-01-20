@@ -17,7 +17,6 @@ void setup() {
 }
 
 void loop(){
-  Serial.println("Hello World");
   SystemClock_Print();          // CPU周波数を表示
   delay(1000);
 }
