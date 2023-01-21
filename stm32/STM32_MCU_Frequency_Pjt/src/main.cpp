@@ -7,16 +7,17 @@
 //=====================================================================
 #include <Arduino.h>
 
-void SystemClock_Config(void);  // CPU周波数を設定
-void SystemClock_Print(void);   // CPU周波数を表示
+// prototype
+void SystemClock_Config(void);  // CPU frequency setting
+void SystemClock_Print(void);   // CPU frequency display
 
 void setup() {
   Serial.begin(115200);
   delay(10);
-  SystemClock_Config();         // CPU周波数を設定
+  SystemClock_Config();         // CPU frequency setting
 }
 
 void loop(){
-  SystemClock_Print();          // CPU周波数を表示
+  SystemClock_Print();          // CPU frequency display
   delay(1000);
 }
