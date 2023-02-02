@@ -46,6 +46,6 @@ void loop() {
   dataTemp = TM0 + (TM1 - TM0) * (dataTemp - TL0) / (TL1 - TL0);      // Temperature correction
   dataHumid = HM0 + (HM1 - HM0) * (dataHumid - HL0) / (HL1 - HL0);    // Humidity correction
 
-  Serial.println(String(dataTemp) + "[℃], " + String(dataHumid) + "[%]");
+  Serial.println(String(dataTemp) + "[deg C], " + String(dataHumid) + "[%]");
   delay(1000);
 }
