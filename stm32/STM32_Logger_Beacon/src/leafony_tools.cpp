@@ -32,14 +32,14 @@ void SystemClock_Config(void)
   for(double N=1; N<=40; N++) {
     for(double M=1; M<=40; M++) {
       if(N_over_M == N/M) {
-        RCC_OscInitStruct.PLL.PLLM = M; 
+        RCC_OscInitStruct.PLL.PLLM = M;
         RCC_OscInitStruct.PLL.PLLN = N;
         break;
       } else {
         double tmp = abs(N_over_M - N/M);
         if(tmp < MIN) {
           MIN = tmp;
-          RCC_OscInitStruct.PLL.PLLM = M; 
+          RCC_OscInitStruct.PLL.PLLM = M;
           RCC_OscInitStruct.PLL.PLLN = N;
         }
       }

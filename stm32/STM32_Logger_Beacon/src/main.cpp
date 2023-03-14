@@ -11,14 +11,16 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
-#include "STM32LowPower.h"
+#include <STM32LowPower.h>
 #include <STM32RTC.h>
-#include "RTClib.h"
+#include <RTClib.h>
 
 #include <Adafruit_LIS3DH.h>
 #include <HTS221.h>
 #include <ClosedCube_OPT3001.h>
-#include "TBGLib.h"
+#include <TBGLib.h>
+
+#include "parameters.h"
 
 //=====================================================================
 // Sketch firmware version
@@ -31,95 +33,6 @@ const String FIRMWARE_VERSION = "2021.09.140";
 const String strDeviceNamePrefix = "Leaf_";
 const String strDeviceNameUnique = "A";
 String strDeviceName = strDeviceNamePrefix + strDeviceNameUnique;
-
-//=====================================================================
-// シリアルコンソールへのデバック出力
-//      #define DEBUG = 出力あり
-//　　//#define DEBUG = 出力なし（コメントアウトする）
-//=====================================================================
-#define DEBUG
-
-//=====================================================================
-// スリープ時間、送信時間の設定
-//  DEFAULT_SLEEP_INTERVAL : スリープ時間 (秒)
-//  DEFAULT_WAKE_INTERVAL　：Beacon送信時間 (秒)
-//  DEFAULT_CLICK_WAKE_INTERVAL : ダブルタップをしたときの起動時間 (秒)
-//=====================================================================
-#define DEFAULT_SLEEP_INTERVAL 60
-#define DEFAULT_WAKE_INTERVAL 1
-#define DEFAULT_CLICK_WAKE_INTERVAL 20
-
-//=====================================================================
-// センサ測定間隔、データ保存間隔の設定
-//  DEFAULT_SENS_FREQ : センサON頻度
-//  DEFAULT_SAVE_RREQ ：データ保存頻度
-//=====================================================================
-#define DEFAULT_SENS_FREQ 1 // TODO: implement dynamic sens frequency
-#define DEFAULT_SAVE_FREQ 1 // TODO: implement dynamic save frequency
-
-//=====================================================================
-// IO pins definition
-//=====================================================================
-// for STM32 29-pin leaf
-#define BLE_WAKEUP PB12 // D7   PB12
-#define BLE_RX PA0      // [A2] PA1
-#define BLE_TX PA1      // [A1] PA0
-#define INT_0 PC7       // INT0
-#define INT_1 PB3       // INT1
-
-// for STM32 58-pin leaf Bus-A
-// #define BLE_WAKEUP PA8
-// #define BLE_TX PA1
-// #define BLE_RX PA0
-// #define INT_0 PC7
-// #define INT_1 PB3
-
-// for STM32 58-pin leaf Bus-B
-// #define BLE_WAKEUP PB11
-// #define BLE_TX PC5
-// #define BLE_RX PC4
-// #define INT_0 PC7
-// #define INT_1 PB3
-
-//=====================================================================
-// プログラム内で使用する定数定義
-//
-//=====================================================================
-// I2C addresses
-#define LIS2DH_ADDRESS        0x19 // Accelerometer (SD0/SA0 pin = VCC)
-#define OPT3001_ADDRESS       0x45 // Ambient Light Sensor (ADDR pin = VCC)
-#define LCD_I2C_EXPANDER_ADDR 0x1A // LCD I2C Expander
-#define BATT_ADC_ADDR         0x50 // Battery ADC
-
-// Adjust this number for the sensitivity of the 'click' force
-// this strongly depend on the range! for 16G, try 5-10
-// for 8G, try 10-20. for 4G try 20-40. for 2G try 40-80
-#define CLICKTHRESHHOLD 80
-#define SINGLETAP 1
-#define DOUBLETAP 2
-
-// BLE states
-#define BLE_STATE_STANDBY          (0)
-#define BLE_STATE_SCANNING         (1)
-#define BLE_STATE_ADVERTISING      (2)
-#define BLE_STATE_CONNECTING       (3)
-#define BLE_STATE_CONNECTED_MASTER (4)
-#define BLE_STATE_CONNECTED_SLAVE  (5)
-
-// BLE Connecting Mode
-#define MODE_IDLE               (0)
-#define MODE_SEND_DATA          (1)
-#define MODE_CLEAR_EEPROM       (2)
-
-// BLE Advertising Interval
-// Example: If the minimum advertisement interval is 40ms and the maximum advertisement interval is 100ms
-// then the real advertisement interval will be mostly the middle value (70ms) plus a randomly added 20ms delay,
-// which needs to be added according to the Bluetooth specification.
-#define MIN_ADV_INTVAL 200 // 200 * 0.625ms = 125ms
-#define MAX_ADV_INTVAL 400 // 400 * 0.625ms = 250ms
-
-// Baudrate
-#define SERIAL_BAUD 115200
 
 //=====================================================================
 // objects
@@ -311,7 +224,7 @@ void setupSensors() {
   accel.begin(LIS2DH_ADDRESS);
   accel.setRange(LIS3DH_RANGE_2_G);  // Full scale +/- 2G
   accel.setDataRate(LIS3DH_DATARATE_50_HZ);  // Data rate = 10Hz
-  accel.setClick(DOUBLETAP, CLICKTHRESHHOLD);  // enable click interrupt
+  accel.setClick(DOUBLE_TAP, CLICK_THRESHOLD);  // enable click interrupt
 
   // enable interrupt from accelerometer click event
   LowPower.attachInterruptWakeup(INT_1, onClicked, RISING, DEEP_SLEEP_MODE);
@@ -802,7 +715,7 @@ void loop() {
 
     // when the connection is not requested, shutdown all devices during SLEEP_INTERVAL seconds;
     if (!bBleConnected) {
-      // accel.setClick(DOUBLETAP, CLICKTHRESHHOLD); // Enable Interrupt
+      // accel.setClick(DOUBLE_TAP, CLICK_THRESHOLD); // Enable Interrupt
       accel.getClick();  // Enable Interrupt
       sleepAllDevices();
     }
