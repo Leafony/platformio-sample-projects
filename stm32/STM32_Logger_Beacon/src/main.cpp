@@ -15,17 +15,15 @@
 #include <STM32RTC.h>
 #include <RTClib.h>
 
-#include <Adafruit_LIS3DH.h>
-#include <HTS221.h>
-#include <ClosedCube_OPT3001.h>
 #include <TBGLib.h>
 
 #include "parameters.h"
+#include "sensors.h"
 
 //=====================================================================
 // Sketch firmware version
 //=====================================================================
-const String FIRMWARE_VERSION = "2021.09.140";
+const String FIRMWARE_VERSION = "2023.03.230";
 
 //=====================================================================
 // BLE Local device name
@@ -37,10 +35,6 @@ String strDeviceName = strDeviceNamePrefix + strDeviceNameUnique;
 //=====================================================================
 // objects
 //=====================================================================
-// Sensors
-Adafruit_LIS3DH accel = Adafruit_LIS3DH();
-ClosedCube_OPT3001 light;
-
 // BLE
 HardwareSerial Serialble(BLE_TX, BLE_RX);
 BGLib ble112((HardwareSerial *)&Serialble, 0, 0);
@@ -51,18 +45,9 @@ STM32RTC& rtc = STM32RTC::getInstance();
 //=====================================================================
 // Variables
 //=====================================================================
-// LIS2DH : accelerometer
-float dataX_g, dataY_g, dataZ_g;
-float dataTilt = 0;
-
-// HTS221 : Temperature/Humidity
 float dataTemp = 0;
 float dataHumid = 0;
-
-// OPT3001 : Light
 float dataLight = 0;
-
-// Battery voltage
 float dataBatt = 0;
 
 // BLE
@@ -71,9 +56,9 @@ volatile uint8_t ble_state = BLE_STATE_STANDBY;
 bool bBleConnected = false;
 uint8_t mode = MODE_IDLE;
 
-// EEPROM ringbuffer
-uint16_t rb_addr = 0;  // ringbuffer read address
-const uint8_t RINGBUFF_OFFSET_ADDR = 20;
+// EEPROM ring buffer
+uint16_t rb_addr = 0;  // ring buffer read address
+const uint8_t RING_BUFF_OFFSET_ADDR = 20;
 const uint8_t PACKET_LENGTH = 12;
 
 uint16_t wake_intval = DEFAULT_WAKE_INTERVAL;   // Wake time
@@ -199,7 +184,7 @@ void StartAdvData() {
   adv_data[index++] = (humid >> 8) & 0xFF;    // Humidity (Upper)
   adv_data[index++] = humid & 0xFF;           // Humidity (Lower)
   adv_data[index++] = (battVolt >> 8) & 0xFF; // Battery Voltage (Upper)
-  adv_data[index++] = battVolt & 0xFF;        // Battery Boltage (Lower)
+  adv_data[index++] = battVolt & 0xFF;        // Battery Voltage (Lower)
 
   // register advertising packet
   stLen = index;
@@ -209,152 +194,6 @@ void StartAdvData() {
   // index = 0  LE_GAP_SCANNABLE_NON_CONNECTABLE / LE_GAP_UNDIRECTED_CONNECTABLE
   ble112.ble_cmd_le_gap_start_advertising(0, LE_GAP_USER_DATA, LE_GAP_UNDIRECTED_CONNECTABLE);
   while (ble112.checkActivity(1000));
-}
-
-
-//-----------------------------------------------
-// Sensors initialization
-//-----------------------------------------------
-void setupSensors() {
-#ifdef DEBUG
-  Serial.println("Initializing sensors...");
-#endif
-
-  // LIS2DH (accelerometer)
-  accel.begin(LIS2DH_ADDRESS);
-  accel.setRange(LIS3DH_RANGE_2_G);  // Full scale +/- 2G
-  accel.setDataRate(LIS3DH_DATARATE_50_HZ);  // Data rate = 10Hz
-  accel.setClick(DOUBLE_TAP, CLICK_THRESHOLD);  // enable click interrupt
-
-  // enable interrupt from accelerometer click event
-  LowPower.attachInterruptWakeup(INT_1, onClicked, RISING, DEEP_SLEEP_MODE);
-
-  // HTS221 (temperature /humidity)
-  smeHumidity.begin();
-
-  // OPT3001 (light)
-  OPT3001_Config newConfig;
-  OPT3001_ErrorCode errorConfig;
-  light.begin(OPT3001_ADDRESS);
-  newConfig.RangeNumber = B1100;             // automatic full scale
-  newConfig.ConvertionTime = B0;             // convertion time = 100ms
-  newConfig.ModeOfConversionOperation = B01; // single-shot conversion
-  newConfig.Latch = B0;                      // hysteresis-style
-  errorConfig = light.writeConfig(newConfig);
-
-  delay(100); // wait until all sensors are ready
-
-#ifdef DEBUG
-  Serial.println("Sensors initialized.");
-#endif
-}
-
-
-//--------------------------------------------------------------------
-// Get sensors values
-//--------------------------------------------------------------------
-void getSensors() {
-  // HTS221 (temperature & humidity)
-  smeHumidity.begin();
-  dataTemp = (float)smeHumidity.readTemperature();
-  dataHumid = (float)smeHumidity.readHumidity();
-
-  //--------------------
-  // 2点補正用データ
-  //--------------------
-  // 温度補正用データ0
-  float TL0 = 25.0;     // 4-Sensors温度測定値
-  float TM0 = 25.0;     // 温度計等測定値
-  // 温度補正用データ1
-  float TL1 = 40.0;     // 4-Sensors温度測定値
-  float TM1 = 40.0;     // 温度計等測定値
-  // 湿度補正用データ0
-  float HL0 = 60.0;     // 4-Sensors湿度測定値
-  float HM0 = 60.0;     // 湿度計等測定値
-  // 湿度補正用データ1
-  float HL1 = 80.0;     // 4-Sensors湿度測定値
-  float HM1 = 80.0;     // 湿度計等測定値
-  //-------------------------
-  // 温度と湿度の2点補正
-  //-------------------------
-  dataTemp=TM0+(TM1-TM0)*(dataTemp-TL0)/(TL1-TL0);      // 温度補正
-  dataHumid=HM0+(HM1-HM0)*(dataHumid-HL0)/(HL1-HL0);    // 湿度補正
-
-  // if (dataHumid >= 100)
-  // {
-  //  dataHumid=100;
-  // }
-
-  // OPT3001 (illuminance)
-  delay(100);
-  OPT3001 result = light.readResult();
-  dataLight = result.lux;
-
-  // ADC081C027（ADC) battery voltage
-  uint8_t adcVal1 = 0;
-  uint8_t adcVal2 = 0;
-
-  Wire.beginTransmission(BATT_ADC_ADDR);
-  Wire.write(0x00);
-  Wire.endTransmission(false);
-  Wire.requestFrom(BATT_ADC_ADDR, 2);
-  adcVal1 = Wire.read();
-  adcVal2 = Wire.read();
-
-  //測定値がFFならバッテリリーフはつながっていない
-  if (adcVal1 == 0xff && adcVal2 == 0xff) {
-    adcVal1 = adcVal2 = 0;
-  }
-
-  //電圧計算　ADC　* （(リファレンス電圧(3.3V)/ ADCの分解能(256)) * 分圧比（2倍））
-  double temp_mv = ((double)((adcVal1 << 4) | (adcVal2 >> 4)) * 3300 * 2) / 256;
-  dataBatt = (float)(temp_mv / 1000);
-
-#ifdef DEBUG
-  Serial.println("");
-  Serial.println("--- sensors data ---");
-  Serial.println("  Tmp[degC]     = " + String(dataTemp));
-  Serial.println("  Hum[%]        = " + String(dataHumid));
-  Serial.println("  Lum[lx]       = " + String(dataLight));
-  Serial.println("  Bat[V]        = " + String(dataBatt));
-  Serial.println("");
-#endif
-}
-
-//-----------------------------------------
-// sleep sensors
-// センサーリーフをスリープさせる
-//-----------------------------------------
-void sleepSensors() {
-  // HTS221 sleep
-  smeHumidity.deactivate();
-
-  // OPT3001 sleep
-  OPT3001_Config newConfig;
-  OPT3001_ErrorCode errorConfig;
-  newConfig.ModeOfConversionOperation = B00;
-  errorConfig = light.writeConfig(newConfig);
-}
-
-//-----------------------------------------
-// wakeup sensors
-// センサーリーフをスリープから復帰させる
-//-----------------------------------------
-void wakeupSensors() {
-#ifdef DEBUG
-  Serial.println(F("Wakeup Sensors."));
-#endif
-
-  // HTS221 wakeup
-  smeHumidity.activate();
-
-  // OPT3001 wakeup
-  OPT3001_Config newConfig;
-  OPT3001_ErrorCode errorConfig;
-  newConfig.RangeNumber = B1100;  // automatic full scale
-  newConfig.ModeOfConversionOperation = B01; //single-shot conversion
-  errorConfig = light.writeConfig(newConfig);
-  delay(300);
 }
 
 //---------------------------------------
@@ -485,8 +324,8 @@ void setupEEPROM() {
   }
 
   // when address is invalid;
-  if (rb_addr >= EEPROM.length() || (rb_addr - RINGBUFF_OFFSET_ADDR) % PACKET_LENGTH != 0) {
-    rb_addr = RINGBUFF_OFFSET_ADDR;
+  if (rb_addr >= EEPROM.length() || (rb_addr - RING_BUFF_OFFSET_ADDR) % PACKET_LENGTH != 0) {
+    rb_addr = RING_BUFF_OFFSET_ADDR;
   }
 
 #ifdef DEBUG
@@ -524,7 +363,7 @@ void writeEEPROM() {
 
   // Reset the ring buffer address when the size is not enough;
   if (rb_addr + PACKET_LENGTH >= EEPROM.length()) {
-    rb_addr = RINGBUFF_OFFSET_ADDR;
+    rb_addr = RING_BUFF_OFFSET_ADDR;
   }
 
 #ifdef DEBUG
@@ -631,7 +470,7 @@ void sleepAllDevices() {
 }
 
 /**
- * 
+ * @brief 初期化
  */
 void setup() {
   Serial.begin(SERIAL_BAUD);
@@ -651,7 +490,18 @@ void setup() {
 
   setupPort();
   setupEEPROM();
+
+#ifdef DEBUG
+  Serial.println("Initializing sensors...");
+#endif
   setupSensors();
+#ifdef DEBUG
+  Serial.println("Sensors initialized.");
+#endif
+
+  // enable interrupt from accelerometer click event
+  LowPower.attachInterruptWakeup(INT_1, onClicked, RISING, DEEP_SLEEP_MODE);
+
   setupBLE();
 
 #ifdef DEBUG
@@ -661,7 +511,7 @@ void setup() {
 }
 
 /**
- * 
+ * @brief メインルーチン
  */
 void loop() {
   if (!bBleConnected) { // when BLE is not connected.
@@ -672,7 +522,17 @@ void loop() {
     wakeupSensors();
     wakeupBLE();
 
-    getSensors();
+    readSensors(&dataTemp, &dataHumid, &dataLight, &dataBatt);
+#ifdef DEBUG
+  Serial.println("");
+  Serial.println("--- sensors data ---");
+  Serial.println("  Tmp[degC]     = " + String(dataTemp));
+  Serial.println("  Hum[%]        = " + String(dataHumid));
+  Serial.println("  Lum[lx]       = " + String(dataLight));
+  Serial.println("  Bat[V]        = " + String(dataBatt));
+  Serial.println("");
+#endif
+
     sleepSensors();
 
     writeEEPROM();
@@ -716,7 +576,7 @@ void loop() {
     // when the connection is not requested, shutdown all devices during SLEEP_INTERVAL seconds;
     if (!bBleConnected) {
       // accel.setClick(DOUBLE_TAP, CLICK_THRESHOLD); // Enable Interrupt
-      accel.getClick();  // Enable Interrupt
+      enableAccelInterrupt();  // Enable Interrupt
       sleepAllDevices();
     }
   } else { // when ble is connected, this scope will run continuously.
@@ -725,7 +585,7 @@ void loop() {
       Serial.println("Start to send data.");
 #endif
 
-      for (int i = RINGBUFF_OFFSET_ADDR; i < EEPROM.length(); i += PACKET_LENGTH) {
+      for (int i = RING_BUFF_OFFSET_ADDR; i < EEPROM.length(); i += PACKET_LENGTH) {
         char sendData[PACKET_LENGTH];
 
         for (int j=0; j<PACKET_LENGTH; j++) {
@@ -745,13 +605,13 @@ void loop() {
       mode = MODE_IDLE;
     }
     else if (mode == MODE_CLEAR_EEPROM) {
-      for(int i = RINGBUFF_OFFSET_ADDR; i < EEPROM.length(); i++) {
+      for(int i = RING_BUFF_OFFSET_ADDR; i < EEPROM.length(); i++) {
         EEPROM.write(i, 0);
 #ifdef DEBUG
         if (i % 10 == 0) {
           Serial.print(i);
           Serial.print("/");
-          Serial.println(EEPROM.length() - RINGBUFF_OFFSET_ADDR);
+          Serial.println(EEPROM.length() - RING_BUFF_OFFSET_ADDR);
 
           char sendData[PACKET_LENGTH];
           uint8_t len = sprintf(sendData, "%05d", i);
@@ -1006,7 +866,7 @@ void my_evt_gatt_server_attribute_value(const struct ble_msg_gatt_server_attribu
   else if (rcv_data.startsWith("clearEEPROM")){
     mode = MODE_CLEAR_EEPROM;
     // // Clear All
-    // for(int i = RINGBUFF_OFFSET_ADDR; i < EEPROM.length(); i++) {
+    // for(int i = RING_BUFF_OFFSET_ADDR; i < EEPROM.length(); i++) {
     //   EEPROM.write(i, 0);
     // }
   }
