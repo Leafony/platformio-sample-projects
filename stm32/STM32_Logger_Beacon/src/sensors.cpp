@@ -21,8 +21,7 @@ const float HL1 = 80.0;     // 4-Sensors湿度測定値
 const float HM1 = 80.0;     // 湿度計等測定値
 
 /**
- * @brief 
- * 
+ * @brief センサリーフを初期化する
  */
 void setupSensors() {
   // LIS2DH (accelerometer)
@@ -48,8 +47,7 @@ void setupSensors() {
 }
 
 /**
- * @brief 
- * 
+ * @brief センサを読み出す
  */
 void readSensors(float* temp, float* humid, float* illum, float* batt) {
   float dataTemp, dataHumid;
@@ -92,8 +90,7 @@ void readSensors(float* temp, float* humid, float* illum, float* batt) {
 }
 
 /**
- * @brief 
- * 
+ * @brief センサを起動する
  */
 void wakeupSensors() {
   smeHumidity.activate();
@@ -107,8 +104,7 @@ void wakeupSensors() {
 }
 
 /**
- * @brief 
- * 
+ * @brief センサをスリープさせる
  */
 void sleepSensors() {
   smeHumidity.deactivate();
@@ -120,8 +116,7 @@ void sleepSensors() {
 }
 
 /**
- * @brief 
- * 
+ * @brief 加速度センサ割り込みを有効化する
  */
 void enableAccelInterrupt() {
   accel.getClick();

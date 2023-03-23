@@ -57,15 +57,19 @@ bool bBleConnected = false;
 uint8_t mode = MODE_IDLE;
 
 // EEPROM ring buffer
-uint16_t rb_addr = 0;  // ring buffer read address
-const uint8_t RING_BUFF_OFFSET_ADDR = 20;
+//const uint32_t RING_BUFF_START_ADDR = 0x00060000;
+const uint32_t RING_BUFF_START_ADDR = 20;
+//const uint32_t RING_BUFF_END_ADDR   = 0x00080000;
+const uint32_t RING_BUFF_END_ADDR   = 2047;
 const uint8_t PACKET_LENGTH = 12;
+uint32_t rb_addr = 0;  // ring buffer read address
 
-uint16_t wake_intval = DEFAULT_WAKE_INTERVAL;   // Wake time
-uint16_t click_wake_intval = DEFAULT_CLICK_WAKE_INTERVAL;  // Click interrupt wake time
-uint16_t sleep_intval = DEFAULT_SLEEP_INTERVAL; // Sleep time
-uint16_t sens_freq = DEFAULT_SENS_FREQ;         // Sensor ON frequency
-uint16_t save_freq = DEFAULT_SAVE_FREQ;         // Data save frequency
+// Settings saved in the EEPROM
+uint16_t wake_intval       = DEFAULT_WAKE_INTERVAL;       // Wake time
+uint16_t click_wake_intval = DEFAULT_CLICK_WAKE_INTERVAL; // Click interrupt wake time
+uint16_t sleep_intval      = DEFAULT_SLEEP_INTERVAL;      // Sleep time
+uint16_t sens_freq         = DEFAULT_SENS_FREQ;           // Sensor ON frequency
+uint16_t save_freq         = DEFAULT_SAVE_FREQ;           // Data save frequency
 
 //----------------------------------------------
 // Prototypes
@@ -104,9 +108,6 @@ void setupPort() {
 // BLE initialization
 //-----------------------------------------------
 void setupBLE() {
-#ifdef DEBUG
-  Serial.println("setupBLE()");
-#endif
   // set up internal status handlers
   ble112.onBusy = onBusy;
   ble112.onIdle = onIdle;
@@ -143,7 +144,6 @@ void setupBLE() {
 // BLE Advertising data configuration
 //-----------------------------------------------
 void StartAdvData() {
-  // char charTemp[7], charHumid[7], charBatt[7];
   uint16_t temp, humid, illum, battVolt;
   char userData[15];
   uint8_t dataLen;
@@ -201,10 +201,6 @@ void StartAdvData() {
 // BLE リーフをスリープさせる
 //---------------------------------------
 void sleepBLE() {
-#ifdef DEBUG
-  Serial.println("Sleep BLE");
-#endif
-
   ble112.ble_cmd_le_gap_stop_advertising(0);
   while (ble112.checkActivity());
 
@@ -218,10 +214,6 @@ void sleepBLE() {
 // BLEリーフをスリープから復帰させる
 //---------------------------------------
 void wakeupBLE() {
-#ifdef DEBUG
-  Serial.println("Wakeup BLE");
-#endif
-
   digitalWrite(BLE_WAKEUP, HIGH);
   delay(10);
 
@@ -314,23 +306,18 @@ void setupEEPROM() {
     EEPROM.write(7, (sens_freq & 0xFF));
     EEPROM.write(8, (save_freq >> 8) & 0xFF);
     EEPROM.write(9, (save_freq & 0xFF));
-    EEPROM.write(0, 0xAA); // EEPROM configured
-    EEPROM.write(1, 0xAA); // EEPROM configured
-  }
-
-  // EEPROM Test
-  for (uint16_t rb_work; rb_work < EEPROM.length(); rb_work++) {
-    EEPROM.read(rb_work);
+    EEPROM.write(0, 0xAA); // EEPROM configured flag
+    EEPROM.write(1, 0xAA); // EEPROM configured flag
   }
 
   // when address is invalid;
-  if (rb_addr >= EEPROM.length() || (rb_addr - RING_BUFF_OFFSET_ADDR) % PACKET_LENGTH != 0) {
-    rb_addr = RING_BUFF_OFFSET_ADDR;
+  if (rb_addr >= RING_BUFF_END_ADDR || (rb_addr - RING_BUFF_START_ADDR) % PACKET_LENGTH != 0) {
+    rb_addr = RING_BUFF_START_ADDR;
   }
 
 #ifdef DEBUG
-  Serial.print("EEPROM length: ");
-  Serial.println(EEPROM.length());
+  Serial.print("Ring buffer length: ");
+  Serial.println(RING_BUFF_END_ADDR - RING_BUFF_START_ADDR);
   Serial.print("Ring buffer read address: ");
   Serial.println(rb_addr);
   Serial.print("WAKE_INTERVAL: ");
@@ -339,15 +326,11 @@ void setupEEPROM() {
   Serial.print("SLEEP_INTERVAL: ");
   Serial.print(sleep_intval);
   Serial.println(" seconds");
-  // Serial.print("SENS_FREQ = ");
-  // Serial.println(sens_freq);
-  // Serial.print("SAVE_FREQ = ");
-  // Serial.println(save_freq);
 #endif
 }
 
 /**
- * 
+ * @brief EEPROMにログを書き込み
  */
 void writeEEPROM() {
   uint16_t temp, humid, illum, battVolt;
@@ -362,8 +345,8 @@ void writeEEPROM() {
   u_time = getTimestamp();
 
   // Reset the ring buffer address when the size is not enough;
-  if (rb_addr + PACKET_LENGTH >= EEPROM.length()) {
-    rb_addr = RING_BUFF_OFFSET_ADDR;
+  if (rb_addr + PACKET_LENGTH >= RING_BUFF_END_ADDR) {
+    rb_addr = RING_BUFF_START_ADDR;
   }
 
 #ifdef DEBUG
@@ -412,7 +395,7 @@ void writeEEPROM() {
   Serial.print(", batt = ");
   Serial.print(battVolt);
   Serial.println(" }");
-  Serial.print("Next ringbuffer address: ");
+  Serial.print("Next ring buffer address: ");
   Serial.println(rb_addr);
   Serial.println("");
 #endif
@@ -453,9 +436,9 @@ uint32_t getTimestamp() {
 }
 
 /**
- * 
+ * @brief すべてのデバイスをスリープ
  */
-void sleepAllDevices() {
+void sleepAll() {
   sleepBLE();
   sleepSensors();
 
@@ -522,6 +505,10 @@ void loop() {
     wakeupSensors();
     wakeupBLE();
 
+#ifdef DEBUG
+    Serial.println("<<< Device is ready <<<");
+#endif
+
     readSensors(&dataTemp, &dataHumid, &dataLight, &dataBatt);
 #ifdef DEBUG
   Serial.println("");
@@ -549,7 +536,7 @@ void loop() {
       Serial.flush();
 #endif
 
-      // Continue Advertising; (check BLE status every 0.1 secound.)
+      // Continue Advertising; (check BLE status every 0.1 second.)
       for (int i = 0; i < click_wake_intval * 10; i++) {
         delay(100);
         // check ble status; if connection requested, my_evt_le_connection_opend handler is called.
@@ -577,7 +564,7 @@ void loop() {
     if (!bBleConnected) {
       // accel.setClick(DOUBLE_TAP, CLICK_THRESHOLD); // Enable Interrupt
       enableAccelInterrupt();  // Enable Interrupt
-      sleepAllDevices();
+      sleepAll();
     }
   } else { // when ble is connected, this scope will run continuously.
     if (mode == MODE_SEND_DATA) {
@@ -585,7 +572,9 @@ void loop() {
       Serial.println("Start to send data.");
 #endif
 
-      for (int i = RING_BUFF_OFFSET_ADDR; i < EEPROM.length(); i += PACKET_LENGTH) {
+      delay(500);
+
+      for (uint32_t i = RING_BUFF_START_ADDR; i < RING_BUFF_END_ADDR; i += PACKET_LENGTH) {
         char sendData[PACKET_LENGTH];
 
         for (int j=0; j<PACKET_LENGTH; j++) {
@@ -599,19 +588,19 @@ void loop() {
       Serial.println("Finish to send data.");
 #endif
 
-      // after all the data trasnported,
+      // after all the data transported,
       ble112.ble_cmd_gatt_server_send_characteristic_notification(1, 0x000C, 6, (const uint8_t *)"finish");
       while (ble112.checkActivity(1000));
       mode = MODE_IDLE;
     }
     else if (mode == MODE_CLEAR_EEPROM) {
-      for(int i = RING_BUFF_OFFSET_ADDR; i < EEPROM.length(); i++) {
+      for(uint32_t i = RING_BUFF_START_ADDR; i < RING_BUFF_END_ADDR; i++) {
         EEPROM.write(i, 0);
 #ifdef DEBUG
         if (i % 10 == 0) {
           Serial.print(i);
           Serial.print("/");
-          Serial.println(EEPROM.length() - RING_BUFF_OFFSET_ADDR);
+          Serial.println(RING_BUFF_END_ADDR - RING_BUFF_START_ADDR);
 
           char sendData[PACKET_LENGTH];
           uint8_t len = sprintf(sendData, "%05d", i);
@@ -865,10 +854,6 @@ void my_evt_gatt_server_attribute_value(const struct ble_msg_gatt_server_attribu
   }
   else if (rcv_data.startsWith("clearEEPROM")){
     mode = MODE_CLEAR_EEPROM;
-    // // Clear All
-    // for(int i = RING_BUFF_OFFSET_ADDR; i < EEPROM.length(); i++) {
-    //   EEPROM.write(i, 0);
-    // }
   }
 }
 
