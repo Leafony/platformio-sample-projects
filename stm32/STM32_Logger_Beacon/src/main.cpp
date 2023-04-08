@@ -23,7 +23,7 @@
 //=====================================================================
 // Sketch firmware version
 //=====================================================================
-const String FIRMWARE_VERSION = "2023.03.230";
+const String FIRMWARE_VERSION = "2023.04.080";
 
 //=====================================================================
 // BLE Local device name
@@ -57,10 +57,6 @@ bool bBleConnected = false;
 uint8_t mode = MODE_IDLE;
 
 // EEPROM ring buffer
-//const uint32_t RING_BUFF_START_ADDR = 0x00060000;
-const uint32_t RING_BUFF_START_ADDR = 20;
-//const uint32_t RING_BUFF_END_ADDR   = 0x00080000;
-const uint32_t RING_BUFF_END_ADDR   = 2047;
 const uint8_t PACKET_LENGTH = 12;
 uint32_t rb_addr = 0;  // ring buffer read address
 

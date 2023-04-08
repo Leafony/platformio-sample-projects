@@ -32,7 +32,7 @@
 #define DEFAULT_SAVE_FREQ 1
 
 //=====================================================================
-// IO pins definition
+// IOピンの定義
 //=====================================================================
 // for STM32 29-pin leaf
 #define BLE_WAKEUP PB12 // D7   PB12
@@ -56,14 +56,18 @@
 // #define INT_1      PB3
 
 //=====================================================================
-// プログラム内で使用する定数定義
-//
+// プログラム内で使用する定数
 //=====================================================================
 // I2C addresses
 #define LIS2DH_ADDRESS        0x19 // Accelerometer (SD0/SA0 pin = VCC)
 #define OPT3001_ADDRESS       0x45 // Ambient Light Sensor (ADDR pin = VCC)
 #define LCD_I2C_EXPANDER_ADDR 0x1A // LCD I2C Expander
 #define BATT_ADC_ADDR         0x50 // Battery ADC
+
+// Ring buffer
+// These addresses must not overlap with the bootloader area
+#define RING_BUFF_START_ADDR 0x00020000
+#define RING_BUFF_END_ADDR   RING_BUFF_START_ADDR + 65535
 
 // Adjust this number for the sensitivity of the 'click' force
 // this strongly depend on the range! for 16G, try 5-10
