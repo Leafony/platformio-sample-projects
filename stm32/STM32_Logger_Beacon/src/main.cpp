@@ -18,7 +18,7 @@
 #include <TBGLib.h>
 
 #include "parameters.h"
-#include "sensors.h"
+#include "sensors4.h"
 
 //=====================================================================
 // Sketch firmware version
