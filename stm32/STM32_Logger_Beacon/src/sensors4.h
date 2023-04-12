@@ -1,5 +1,5 @@
-#ifndef sensors_h
-#define sensors_h
+#ifndef sensors4_h
+#define sensors4_h
 
 #include <HTS221.h>
 #include <ClosedCube_OPT3001.h>
