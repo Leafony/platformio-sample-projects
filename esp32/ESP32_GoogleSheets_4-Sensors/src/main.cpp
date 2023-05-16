@@ -20,9 +20,9 @@
 #include <HTS221.h>
 #include <ClosedCube_OPT3001.h>
 
-#define ENTERPRISE
+//#define ENTERPRISE
 
-//#ifdef ENTERPRISE   // Enterprise
+#ifdef ENTERPRISE   // Enterprise
 #include <esp_wpa2.h>
 #endif
 
