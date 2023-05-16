@@ -28,9 +28,9 @@
 #include <DHT.h>
 #include <DHT_U.h>
 
-#define ENTERPRISE
+//#define ENTERPRISE
 
-//#ifdef ENTERPRISE   // Enterprise
+#ifdef ENTERPRISE   // Enterprise
 #include <esp_wpa2.h>
 #endif
 
