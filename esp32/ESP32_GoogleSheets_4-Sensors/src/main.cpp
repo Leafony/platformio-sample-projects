@@ -22,7 +22,7 @@
 
 #define ENTERPRISE
 
-#ifdef ENTERPRISE   // Enterprise
+//#ifdef ENTERPRISE   // Enterprise
 #include <esp_wpa2.h>
 #endif
 
@@ -30,9 +30,9 @@
 String UniqueID = "Leafony_A";
 
 #ifdef ENTERPRISE   // Enterprise
-#define EAP_IDENTITY "login" //if connecting from another corporation, use identity@organisation.domain in Eduroam 
-#define EAP_PASSWORD "password" //your Eduroam password
-const char* SSID_ENT = "eduroam"; // Eduroam SSID
+#define EAP_IDENTITY "identity" //if connecting from another corporation, use identity@organisation.domain 
+#define EAP_PASSWORD "password" //Wi-Fi Password
+const char* SSID_ENT = "wifi_ssid"; // Wi-Fi SSID
 #endif
 
 // Connecting WiFi Settings
