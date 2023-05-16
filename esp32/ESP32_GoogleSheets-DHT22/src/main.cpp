@@ -42,13 +42,13 @@ String UniqueID = "Leafony_A";
 
 #ifdef ENTERPRISE   // Enterprise
 #define EAP_IDENTITY "identity" //if connecting from another corporation, use identity@organisation.domain 
-#define EAP_PASSWORD "password" //Wi-Fi Password
-const char* SSID_ENT = "wifi_ssid"; // Wi-Fi SSID
+#define EAP_PASSWORD "password" //Password
+const char* SSID_ENT = "ssid"; // Wi-Fi SSID
 #endif
 
 // Connecting WiFi Settings
-const char* SSID = "wifi_ssid";           // Wi-Fi SSID
-const char* PASSWORD = "wifi_password";   // Wi-Fi Password
+const char* SSID = "ssid";           // Wi-Fi SSID
+const char* PASSWORD = "password";   // Password
 // Accessed Google Script Settings
 const char* APP_SERVER = "script.google.com";
 const char* KEY = "google_scripts_key";
