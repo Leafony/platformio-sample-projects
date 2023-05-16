@@ -25,13 +25,12 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <HTTPClient.h>
-#include <HTS221.h>
 #include <DHT.h>
 #include <DHT_U.h>
 
 #define ENTERPRISE
 
-#ifdef ENTERPRISE   // Enterprise
+//#ifdef ENTERPRISE   // Enterprise
 #include <esp_wpa2.h>
 #endif
 
@@ -42,14 +41,14 @@ DHT dht(DHT_PIN,DHT22);
 String UniqueID = "Leafony_A";
 
 #ifdef ENTERPRISE   // Enterprise
-#define EAP_IDENTITY "login" //if connecting from another corporation, use identity@organisation.domain in Eduroam 
-#define EAP_PASSWORD "password" //your Eduroam password
-const char* SSID_ENT = "eduroam"; // Eduroam SSID
+#define EAP_IDENTITY "identity" //if connecting from another corporation, use identity@organisation.domain 
+#define EAP_PASSWORD "password" //Wi-Fi Password
+const char* SSID_ENT = "wifi_ssid"; // Wi-Fi SSID
 #endif
 
 // Connecting WiFi Settings
-const char* SSID = "wifi_ssid";           // WiFi SSID
-const char* PASSWORD = "wifi_password";   // WiFi Password
+const char* SSID = "wifi_ssid";           // Wi-Fi SSID
+const char* PASSWORD = "wifi_password";   // Wi-Fi Password
 // Accessed Google Script Settings
 const char* APP_SERVER = "script.google.com";
 const char* KEY = "google_scripts_key";
