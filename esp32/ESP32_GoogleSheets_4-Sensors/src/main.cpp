@@ -30,7 +30,7 @@
 String UniqueID = "Leafony_A";
 
 #ifdef ENTERPRISE   // Enterprise
-#define EAP_IDENTITY "identity" //if connecting from another corporation, use identity@organisation.domain 
+#define EAP_IDENTITY "identity" //identity
 #define EAP_PASSWORD "password" //Password
 const char* SSID_ENT = "ssid"; // Wi-Fi SSID
 #endif
