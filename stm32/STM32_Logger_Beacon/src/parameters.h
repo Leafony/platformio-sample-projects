@@ -66,7 +66,7 @@
 
 // Ring buffer
 // These addresses must not overlap with the bootloader area
-#define RING_BUFF_START_ADDR 0x00020000
+#define RING_BUFF_START_ADDR 0x00010000
 #define RING_BUFF_END_ADDR   RING_BUFF_START_ADDR + 65535
 
 // Adjust this number for the sensitivity of the 'click' force
@@ -86,8 +86,9 @@
 
 // BLE Connecting Mode
 #define MODE_IDLE               (0)
-#define MODE_SEND_DATA          (1)
-#define MODE_CLEAR_EEPROM       (2)
+#define MODE_SEND_DATA_VIA_BLE  (1)
+#define MODE_SEND_DATA_VIA_UART (2)
+#define MODE_CLEAR_EEPROM       (3)
 
 // BLE Advertising Interval
 // Example: If the minimum advertisement interval is 40ms and the maximum advertisement interval is 100ms

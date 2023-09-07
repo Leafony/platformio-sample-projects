@@ -45,6 +45,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
 //=====================================================================
 // Variables
 //=====================================================================
+volatile bool bUartInterrupted = false;
 float dataTemp = 0;
 float dataHumid = 0;
 float dataLight = 0;
@@ -75,6 +76,8 @@ uint32_t getTimestamp();
 void onBusy(void);
 void onIdle(void);
 void onTimeout(void);
+void onClicked(void);
+void wakeupFromUart(void);
 void my_evt_gatt_server_attribute_value(const struct ble_msg_gatt_server_attribute_value_evt_t *msg);
 void my_evt_le_connection_opend(const ble_msg_le_connection_opend_evt_t *msg);
 void my_evt_le_connection_closed(const struct ble_msg_le_connection_closed_evt_t *msg);
@@ -90,6 +93,17 @@ bool onClickedFlag = false;
 //----------------------------------------------
 void onClicked() {
   onClickedFlag = true;
+}
+
+//----------------------------------------------
+// UART RX Interrupt
+//----------------------------------------------
+void wakeupFromUart() {
+  if (bUartInterrupted) {
+    return;
+  }
+  bUartInterrupted = true;
+  mode = MODE_SEND_DATA_VIA_UART;
 }
 
 //----------------------------------------------
@@ -481,6 +495,9 @@ void setup() {
   // enable interrupt from accelerometer click event
   LowPower.attachInterruptWakeup(INT_1, onClicked, RISING, DEEP_SLEEP_MODE);
 
+  // enable interrupt from UART RX
+  LowPower.enableWakeupFrom(&Serial, wakeupFromUart);
+
   setupBLE();
 
 #ifdef DEBUG
@@ -493,7 +510,7 @@ void setup() {
  * @brief メインルーチン
  */
 void loop() {
-  if (!bBleConnected) { // when BLE is not connected.
+  if (!bBleConnected && !bUartInterrupted) { // when BLE is not connected.
 #ifdef DEBUG
     Serial.println("<<< Wake up <<<");
 #endif
@@ -562,8 +579,8 @@ void loop() {
       enableAccelInterrupt();  // Enable Interrupt
       sleepAll();
     }
-  } else { // when ble is connected, this scope will run continuously.
-    if (mode == MODE_SEND_DATA) {
+  } else { // when ble is connected or receive send command via uart, this scope will run continuously.
+    if (mode == MODE_SEND_DATA_VIA_BLE) {
 #ifdef DEBUG
       Serial.println("Start to send data.");
 #endif
@@ -580,14 +597,33 @@ void loop() {
         while (ble112.checkActivity(1000));
       }
 
-#ifdef DEBUG
-      Serial.println("Finish to send data.");
-#endif
-
       // after all the data transported,
       ble112.ble_cmd_gatt_server_send_characteristic_notification(1, 0x000C, 6, (const uint8_t *)"finish");
       while (ble112.checkActivity(1000));
       mode = MODE_IDLE;
+#ifdef DEBUG
+      Serial.println("Finish to send data.");
+#endif
+    }
+    else if (mode == MODE_SEND_DATA_VIA_UART) {
+#ifdef DEBUG
+      Serial.println("Start to send data.");
+#endif
+      for (uint32_t i = RING_BUFF_START_ADDR; i < RING_BUFF_END_ADDR; i += PACKET_LENGTH) {
+        char sendData[PACKET_LENGTH];
+
+        for (int j=0; j<PACKET_LENGTH; j++) {
+          sendData[j] = EEPROM.read(i + j);
+        }
+        Serial.print(i);
+        Serial.println(sendData);
+      }
+
+      bUartInterrupted = false;
+      mode = MODE_IDLE;
+#ifdef DEBUG
+      Serial.println("Finish to send data.");
+#endif
     }
     else if (mode == MODE_CLEAR_EEPROM) {
       for(uint32_t i = RING_BUFF_START_ADDR; i < RING_BUFF_END_ADDR; i++) {
@@ -684,7 +720,7 @@ void my_evt_gatt_server_attribute_value(const struct ble_msg_gatt_server_attribu
   if (rcv_data.startsWith("getData"))
   {
     // Start to send EEPROM data
-    mode = MODE_SEND_DATA;
+    mode = MODE_SEND_DATA_VIA_BLE;
   }
   else if (rcv_data.startsWith("getRomSize"))
   {
