@@ -23,7 +23,7 @@
 //=====================================================================
 // Sketch firmware version
 //=====================================================================
-const String FIRMWARE_VERSION = "2023.04.080";
+const String FIRMWARE_VERSION = "2023.09.070";
 
 //=====================================================================
 // BLE Local device name
@@ -50,6 +50,12 @@ float dataTemp = 0;
 float dataHumid = 0;
 float dataLight = 0;
 float dataBatt = 0;
+
+unsigned int d_temp;
+unsigned int d_humid;
+unsigned int d_illum;
+unsigned int d_batt;
+unsigned int d_time;
 
 // BLE
 volatile bool bSystemBootBle = false;
@@ -92,6 +98,7 @@ bool onClickedFlag = false;
 // Accelerometer double-tap interrupt
 //----------------------------------------------
 void onClicked() {
+  // Serial.println("STM32 on Clicked!");
   onClickedFlag = true;
 }
 
@@ -99,11 +106,13 @@ void onClicked() {
 // UART RX Interrupt
 //----------------------------------------------
 void wakeupFromUart() {
-  if (bUartInterrupted) {
-    return;
+  // Serial.println("UART RX Interrupted!");
+  char c = Serial.read();
+
+  if (c == 's') {
+    bUartInterrupted = true;
+    mode = MODE_SEND_DATA_VIA_UART;
   }
-  bUartInterrupted = true;
-  mode = MODE_SEND_DATA_VIA_UART;
 }
 
 //----------------------------------------------
@@ -354,8 +363,12 @@ void writeEEPROM() {
   // Get current time from RTC
   u_time = getTimestamp();
 
+  if (rb_addr < RING_BUFF_START_ADDR) {
+    rb_addr = RING_BUFF_START_ADDR;
+  }
+
   // Reset the ring buffer address when the size is not enough;
-  if (rb_addr + PACKET_LENGTH >= RING_BUFF_END_ADDR) {
+  if (rb_addr + (uint32_t)PACKET_LENGTH >= RING_BUFF_END_ADDR) {
     rb_addr = RING_BUFF_START_ADDR;
   }
 
@@ -606,6 +619,17 @@ void loop() {
 #endif
     }
     else if (mode == MODE_SEND_DATA_VIA_UART) {
+      // Empty Serial Rx
+      // while(Serial.available()) {
+      //   char c = Serial.read();
+      //   Serial.print(c);
+
+      //   if (c != 's') {
+      //     mode == MODE_IDLE;
+      //     return;
+      //   }
+      // }
+
 #ifdef DEBUG
       Serial.println("Start to send data.");
 #endif
@@ -615,8 +639,28 @@ void loop() {
         for (int j=0; j<PACKET_LENGTH; j++) {
           sendData[j] = EEPROM.read(i + j);
         }
+
+        // Serial.println(sendData);
+        // Serial.flush();
+
+        d_temp = (sendData[0] << 8) + sendData[1];
+        d_humid = (sendData[2] << 8) + sendData[3];
+        d_illum = (sendData[4] << 8) + sendData[5];
+        d_batt = (sendData[6] << 8) + sendData[7];
+        d_time = (sendData[8] << 0) + (sendData[9] << 8) + (sendData[10] << 16) + (sendData[11] << 24);
+
         Serial.print(i);
-        Serial.println(sendData);
+        Serial.print(',');
+        Serial.print(d_time);
+        Serial.print(',');
+        Serial.print(d_temp / 256.0);
+        Serial.print(',');
+        Serial.print(d_humid / 256.0);
+        Serial.print(',');
+        Serial.print(d_illum);
+        Serial.print(',');
+        Serial.println(d_batt / 256.0);
+        Serial.flush();
       }
 
       bUartInterrupted = false;
