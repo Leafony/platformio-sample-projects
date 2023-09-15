@@ -5,7 +5,7 @@ STM32リーフで温度、湿度、照度のログを一定間隔で測定し、
 ## ログ取得手順
 
 1. スケッチを書き込みLeafonyの電源スイッチをONにする
-2. PCやスマートフォン等で[webツール](https://github.com/Leafony/Sample-Sketches/tree/master/STM32_Logger_Beacon/sample_web_app/lescan)を開き、LeafonyとBluetoothで接続する（このときLeafonyの時刻がPCと同期します。）
+2. PCやスマートフォン等で[STM32 Sensors Logger Webアプリケーション](https://docs.leafony.com/Sample-Sketches/STM32_Logger_Beacon/sample_web_app/lescan/)を開き、LeafonyとBluetoothで接続する（このときLeafonyの時刻がPCと同期します。）
 4. Bluetoothを切断し、しばらく放置する。このとき一定間隔でログが保存されています。
 5. LeafonyとPCをUSBで接続し、TeraTerm等のシリアルコンソールで　１１５２００ｂｐｓでUART接続する。
 6. `s`と送信するとログデータがダンプされる。
