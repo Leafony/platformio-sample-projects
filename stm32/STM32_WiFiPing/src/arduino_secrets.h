@@ -1,2 +1,2 @@
-#define SECRET_SSID "Tokihiko Mori"
-#define SECRET_PASS "haruka0850"
+#define SECRET_SSID "YOUR_SSID"
+#define SECRET_PASS "YOUR_PASSWORD"
