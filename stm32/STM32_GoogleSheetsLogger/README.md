@@ -1,4 +1,16 @@
-# Google Sheets Logger
+# Google スプレッドシートでセンサデータの可視化
+## 用意するもの
+* Simple BLE Characteristic (公開予定)
+ESP32 Wi-Fi Kit2
+以下のいずれかのセンサを使用
+DHT221 (温度・湿度)
+4-Sensors(温度・湿度・照度)
+単4ニッケル⽔素電池x3本
+開発用パソコン
+Wi-Fiルータ
+
+
+
 
 ## 動作手順
 
