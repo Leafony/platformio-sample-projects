@@ -1,15 +1,16 @@
 # Google スプレッドシートでセンサデータの可視化
+## はじめに
+Basic Kit2とWi-Fi Maryを使って、環境センサが出来上がります。この環境センサをインターネットに繋げば、Googleスプレッドシートでのセンサデータの可視化が簡単に出来ます。
+
 ## 用意するもの
-* ESP32 Wi-Fi Kit2
-* 4-Sensors(温度・湿度・照度)
-* 単4ニッケル⽔素電池x3本
-* 開発用パソコン
+* Basic Kit2
+* AC06 Wi-Fi Mary
+* AV04 2V～4.5V
+* AZ67 AAA battery holder
+* 単4ニッケル⽔素電池x3本  
 * Wi-Fiルータ
 
-
-
-
-## 動作手順
+## 
 
 1. 下記の記述に従い Google App Script を設定した Google Sheets を用意する
 https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#google-apps-script%E3%81%AE%E8%A8%AD%E5%AE%9A
