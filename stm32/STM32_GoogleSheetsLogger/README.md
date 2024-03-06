@@ -22,7 +22,7 @@ https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#
 ## Leafonyの組み立て
 4-Sensors、USB、STM32MCU、Wi-Fi Mary、2V～4.5Vリーフの順番で組み立てます。
 
-## ソースコード
+## ソースコードの書き込み
 `arduino_secrets.h` に、Wi-FiルータのSSIDとパスワード、Google Apps ScriptのデプロイIDを入力して、書き込みます。
 
 ## 実行結果
