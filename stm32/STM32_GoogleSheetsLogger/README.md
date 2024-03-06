@@ -10,10 +10,16 @@ Basic Kit2とWi-Fi Maryを使って、環境センサが出来上がります。
 * 単4ニッケル⽔素電池x3本  
 * Wi-Fiルータ
 
-## 
-
-1. 下記の記述に従い Google App Script を設定した Google Sheets を用意する
+## Google Apps Scriptの設定
+下記の記述に従い Google App Script を設定した Google Sheets を用意します。
 https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#google-apps-script%E3%81%AE%E8%A8%AD%E5%AE%9A
+
+## Google Apps Scriptのデプロイ
+
+
+## Leafonyの組み立て
+
+## ソースコード
 
 2. `arduino_secrets.h` に、1で作成したシートのシートIDと、Wi-Fiの接続情報を入力
 
