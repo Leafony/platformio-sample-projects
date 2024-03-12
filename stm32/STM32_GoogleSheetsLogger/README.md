@@ -61,7 +61,7 @@ function doGet(e) {
 https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#google-apps-script%E3%81%AE%E3%83%87%E3%83%97%E3%83%AD%E3%82%A4
 
 ## Leafonyの組み立て
-4-Sensors、USB、STM32MCU、AX04 Spacer、Wi-Fi Mary、2V～4.5Vリーフの順番で組み立てます。
+4-Sensors、USB、STM32MCU、AX04 Spacer、Wi-Fi Mary、2V～4.5Vリーフの順番で組み立てます。</br>
 **Wi-Fi Maryに実装されているATWINC 1500のモジュールが、上段のリーフと干渉するのでスペーサリーフを入れて組立ててください。**
 
 ## ソースコードの書き込み
