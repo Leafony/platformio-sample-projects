@@ -6,6 +6,7 @@ Basic Kit2とWi-Fi Maryを使って、環境センサが出来上がります。
 * Basic Kit2
 * AC06 Wi-Fi Mary
 * AV04 2V～4.5V
+* AX04 Spacer
 * AZ67 AAA battery holder
 * AZ63 Nut Plate
 * 単4ニッケル⽔素電池x3本  
@@ -20,7 +21,7 @@ https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#
 https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#google-apps-script%E3%81%AE%E3%83%87%E3%83%97%E3%83%AD%E3%82%A4
 
 ## Leafonyの組み立て
-4-Sensors、USB、STM32MCU、Wi-Fi Mary、2V～4.5Vリーフの順番で組み立てます。
+4-Sensors、USB、STM32MCU、AX04 Spacer、Wi-Fi Mary、2V～4.5Vリーフの順番で組み立てます。
 
 ## ソースコードの書き込み
 `arduino_secrets.h` に、Wi-FiルータのSSIDとパスワード、Google Apps ScriptのデプロイIDを入力して、書き込みます。
