@@ -16,6 +16,7 @@ USB、STM32MCU、AX04 Spacer、Wi-Fi Maryの順番で組み立てます。</br>
 ソースコードを書き込みます。</br>
 
 ## 実行結果
+Wi-Fiモジュール(ATWINC1500)のファームウェアのバージョンが、19.6.1であることを確認してください。
 
 ```c++
 WiFi101 firmware check.
