@@ -13,8 +13,13 @@ Basic Kit2とWi-Fi Maryを使って、環境センサが出来上がります。
 * Wi-Fiルータ
 
 ## Google Apps Scriptの設定
-以下を参照し、Google App Scriptにコードを書き込みます。</br>
+スプレッドシートを開き`拡張機能`→`Apps Script`をクリックし、以下のソースコードを貼り付けます。</br>
+`spreadsheetId`と`sheetName`は、以下を参照し入力します。</br>
+* `spreadsheetId`: [こちら](https://developers.google.com/sheets/api/guides/concepts?hl=ja)を参照し入力します。</br>
+* `sheetName` :スプレッドシートのシート名を入力します。デフォルトは、`シート1`になっています。</br>
+詳しくは、以下を参照してください。
 `https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#google-apps-script%E3%81%AE%E8%A8%AD%E5%AE%9A`
+
 ```c++
 function doGet(e) {
 
