@@ -17,3 +17,10 @@ USB、STM32MCU、AX04 Spacer、Wi-Fi Maryの順番で組み立てます。</br>
 
 ## 実行結果
 
+WiFi101 firmware check.
+
+WiFi101 shield: DETECTED
+Firmware version installed: 19.6.1
+Latest firmware version available : 19.6.1
+
+Check result: PASSED
