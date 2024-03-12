@@ -14,6 +14,48 @@ Basic Kit2とWi-Fi Maryを使って、環境センサが出来上がります。
 
 ## Google Apps Scriptの設定
 下記に従って Google App Script を設定します。
+```c++
+function doGet(e) {
+
+    let id = '1_F0sVNRqXUmifNbBHzWQUEvTeUmPkJeOTxO5MKtY83k'; //Insert spreadsheetId
+    let sheetName = 'シート1'; //Insert sheetName
+    var result;
+
+    // e.parameter has received GET parameters, i.e. temperature, humidity, Illumination, Battery
+    if (e.parameter == undefined) {
+        result = 'Parameter undefined';
+    } else {
+        var sheet = SpreadsheetApp.openById(id).getSheetByName(sheetName);
+        var newRow = sheet.getLastRow() + 1;  // get row number to be inserted
+        var rowData = [];
+
+        // get current time
+        
+        rowData[0] = e.parameter.UniqueID;
+        rowData[1] = new Date();
+        rowData[2] = e.parameter.temperature;
+        rowData[3] = new Date();
+        rowData[4] = e.parameter.humidity;
+        rowData[5] = new Date();
+        rowData[6] = e.parameter.illumination;
+        rowData[7] = new Date();
+        rowData[8] = e.parameter.Battery;         
+
+        // 1 x rowData.length cells from (newRow, 1) cell are specified
+        var newRange = sheet.getRange(newRow, 1, 1, rowData.length);
+
+        // insert data to the target cells
+        newRange.setValues([rowData]);
+        result =  'Ok';
+    }
+
+    return ContentService.createTextOutput(result);
+}
+
+```
+
+
+
 https://docs.leafony.com/docs/examples/advanced/2_p/esp32/esp32_googlesheets_1/#google-apps-script%E3%81%AE%E8%A8%AD%E5%AE%9A
 
 ## Google Apps Scriptのデプロイ
