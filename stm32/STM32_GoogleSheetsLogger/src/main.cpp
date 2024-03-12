@@ -8,6 +8,8 @@
 #include "arduino_secrets.h"
 #include "sensors.h"
 
+#include <Wire.h> // add ito
+
 // WiFi101LeafonyをSTM32で動作させる場合に必要な記述
 extern "C" void attachInterruptMultiArch(uint32_t pin, void *chip_isr, uint32_t mode)
 {
@@ -24,6 +26,8 @@ extern "C" void detachInterruptMultiArch(uint32_t pin)
  ********************/
 const String deviceName = DEVICE_NAME;
 const int interval = INTERVAL;
+
+const int BATT_ADC_ADDR = 0x50; // add ito
 
 /********************
  * Wi-Fi
@@ -127,6 +131,8 @@ void setup()
  */
 void loop()
 {
+
+
   // Google Sheetsにログを記録
   logToGoogleSheets();
 
@@ -202,6 +208,27 @@ void logToGoogleSheets()
   float humidity = getHumidity();
   float illuminance = getIlluminance();
 
+#if 1 // ito
+  // read ADC registers:
+  Wire.beginTransmission(BATT_ADC_ADDR);
+  Wire.write(0x00);
+  Wire.endTransmission(false);
+  Wire.requestFrom(BATT_ADC_ADDR,2);
+
+  uint8_t adcVal1 = Wire.read();
+  uint8_t adcVal2 = Wire.read();
+
+  // when ADC is not connected, read values are 0xFF:
+  if (adcVal1 == 0xff && adcVal2 == 0xff) {
+    adcVal1 = adcVal2 = 0;
+  }
+
+  // voltage mV = adcVal * Vref(3.3V) / resolution(8bit) * Vdiv(2)
+  double tempMillivolt = ((double)((adcVal1 << 4) | (adcVal2 >> 4)) * 3300 * 2) / 256;
+  float dataBatt = (float)(tempMillivolt / 1000);
+#endif
+
+
 #ifdef DEBUG
   Serial.print("Temperature: ");
   Serial.print(temperature);
@@ -212,6 +239,13 @@ void logToGoogleSheets()
   Serial.print("Illuminance: ");
   Serial.print(illuminance);
   Serial.println(" lx");
+#if 1 // ito
+  Serial.print("Battery: ");
+  Serial.print(dataBatt);
+  Serial.println(" V");
+
+#endif
+
 #endif // DEBUG
 
   String url = "/macros/s/";
@@ -225,6 +259,10 @@ void logToGoogleSheets()
   url += humidity;
   url += "&illumination=";
   url += illuminance;
+#if 1 // ito
+  url += "&Battery=";
+  url += dataBatt;
+#endif
 
   if (client.connectSSL(server, 443))
   {

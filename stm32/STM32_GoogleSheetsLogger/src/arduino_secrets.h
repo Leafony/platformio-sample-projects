@@ -15,4 +15,4 @@
 //#define DOZE_MODE
 
 // Google App Script
-#define GAS_DEPLOY_ID "deployID"
+#define GAS_DEPLOY_ID "deployid"
