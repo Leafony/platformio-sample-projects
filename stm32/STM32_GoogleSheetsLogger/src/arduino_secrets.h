@@ -8,11 +8,11 @@
 #define DEBUG
 
 // Wi-Fi
-#define SECRET_SSID "IODATA-5dae7e-2G"
-#define SECRET_PASS "fd8na48807289"
+#define SECRET_SSID "ssid"
+#define SECRET_PASS "password"
 
 // スリープ時の処理 (DOZE_MODE: Dozeモードで待機, コメントアウト: Shutdownモードで待機)
 //#define DOZE_MODE
 
 // Google App Script
-#define GAS_DEPLOY_ID "AKfycbwxtJZQbYOo1C7xsr3rovkHi3zk88iETftLlF5cigDxe3mgQyWZ7UycBpECIuUMhL9R"
+#define GAS_DEPLOY_ID "deployID"
