@@ -28,7 +28,7 @@ uint16_t ADC101C::read(void)
   {
     return 0;
   }
-  return (((uint16_t)(data[1] & 0x0f) << 6) | (data[0] >> 2));
+  return (((uint16_t)(data[0] & 0x0f) << 6) | (data[1] >> 2));
 }
 
 ADC101C_error_t ADC101C::readI2CBuffer(uint8_t *dest, ADC101C_REGISTER_t reg, uint16_t len)
