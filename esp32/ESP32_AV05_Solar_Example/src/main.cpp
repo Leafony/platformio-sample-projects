@@ -61,6 +61,10 @@ volatile bool b_timer1_timeout = false; // タイマー1タイムアウトフラ
 
 volatile bool b_power_on = false; // 電源ONフラグ(電源投入処理が終わるとtrueになる)
 
+// WiFi connection controlling parameters
+int statusCheckCounter = 0;
+const int CHECK_NUM_MAX = 100;
+
 /**
  * @brief 電源ボタンが押されたときの割り込み処理
  *
@@ -120,6 +124,44 @@ float checkBatteryStatus()
   Serial.println("PWS = " + String(pws));
 
   return dataBatt;
+}
+
+/**
+ * @brief WiFiに接続
+ *
+ */
+void connectWiFi()
+{
+  /**
+   * WiFiを初期化
+   */
+#ifdef ENTERPRISE // Enterprise
+  WiFi.mode(WIFI_STA);
+  esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY)); // provide identity
+  esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY)); // provide username --> identity and username is same
+  esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD)); // provide password
+  esp_wifi_sta_wpa2_ent_enable();
+  WiFi.begin(SSID_ENT); // connect to wifi
+#else
+  WiFi.begin(SSID, PASSWORD);
+#endif
+
+  Serial.print("WiFi connecting");
+  // Wait until succeed connecting.
+  // If the number of checks is more than CHECK_NUM_MAX, give up connecting and
+  // start deepsleep to prevent Joule heat from affecting next measurements.
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    if (statusCheckCounter > CHECK_NUM_MAX)
+    {
+      WiFi.disconnect();
+      Serial.println("failed");
+      espDeepSleep(60);
+    }
+    delay(500);
+    statusCheckCounter++;
+  }
+  Serial.println("\nconnected");
 }
 
 /**
@@ -255,9 +297,6 @@ void mainTask()
  ************************************************************************/
 void setup()
 {
-  // WiFi connection controlling parameters
-  int statusCheckCounter = 0;
-  const int CHECK_NUM_MAX = 100;
 
   Serial.begin(115200);
 
@@ -288,37 +327,6 @@ void setup()
   timerAlarmWrite(timer1, 0.5 * 1000 * 1000, false); // 0.5秒間隔で割り込み開始
 
   enable5VSupply(); // 5V出力をON
-
-  /**
-   * WiFiを初期化
-   */
-#ifdef ENTERPRISE // Enterprise
-  WiFi.mode(WIFI_STA);
-  esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY)); // provide identity
-  esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY)); // provide username --> identity and username is same
-  esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD)); // provide password
-  esp_wifi_sta_wpa2_ent_enable();
-  WiFi.begin(SSID_ENT); // connect to wifi
-#else
-  WiFi.begin(SSID, PASSWORD);
-#endif
-
-  Serial.print("WiFi connecting");
-  // Wait until succeed connecting.
-  // If the number of checks is more than CHECK_NUM_MAX, give up connecting and
-  // start deepsleep to prevent Joule heat from affecting next measurements.
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    if (statusCheckCounter > CHECK_NUM_MAX)
-    {
-      WiFi.disconnect();
-      Serial.println("failed");
-      espDeepSleep(60);
-    }
-    delay(500);
-    statusCheckCounter++;
-  }
-  Serial.println("\nconnected");
 }
 
 /************************************************************************
@@ -399,6 +407,9 @@ void loop()
   {
     // 電源ボタンLEDを消灯
     turnOffLed();
+
+    // WiFiに接続
+    connectWiFi();
 
     // メイン処理を実行
     mainTask();

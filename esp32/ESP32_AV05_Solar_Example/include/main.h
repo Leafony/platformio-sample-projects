@@ -11,5 +11,11 @@
 void onPowerButtonPushed();
 void onTimer0();
 void onTimer1();
+float checkBatteryStatus();
+void connectWiFi();
+void accessToGoogleSheets(float temperature, float humidity, float illumination, float dataBatt);
+void espLightSleep(int period);
+void espDeepSleep(int period);
+void mainTask();
 
 #endif // __MAIN_H__
