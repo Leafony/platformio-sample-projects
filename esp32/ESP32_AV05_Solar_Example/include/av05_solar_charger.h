@@ -1,5 +1,10 @@
-#ifndef __MAIN_H__
-#define __MAIN_H__
+#ifndef __AV05_SOLAR_CHARGER_H__
+#define __AV05_SOLAR_CHARGER_H__
+
+#include <Arduino.h>
+#include <Wire.h>
+#include <TCA9536.h>
+#include <ADC101C.h>
 
 /**
  * IOエキスパンダーピンアサイン
@@ -9,20 +14,8 @@
 #define IOEX_O_ON5V_PIN 2
 #define IOEX_O_LED_N_PIN 3
 
-#define PSW_PUSHED LOW
-#define PSW_RELEASED HIGH
-
 #define PSW_LED_ON LOW
 #define PSW_LED_OFF HIGH
-
-/**
- * 割り込みピン
- */
-#if defined(ESP32)
-#define INT_PSW_N_PIN 27
-#else
-#define INT_PSW_N_PIN 3
-#endif // ESP32
 
 /**
  * LT3652充電ステータス
@@ -39,17 +32,14 @@ typedef enum
 /**
  * プロトタイプ
  */
-void onPowerButtonPushed();
-void onTimer0();
-void onTimer1();
-float readBatteryVoltage();
-LT3652_CHARGE_STATUS_t getChargeStatus();
+bool initAv05SolarCharger();
 bool initIoExpander();
 void turnOnLed();
 void turnOffLed();
 void toggleLed();
 void enable5VSupply();
 void disable5VSupply();
-void checkBatteryStatus();
+float readBatteryVoltage();
+LT3652_CHARGE_STATUS_t getChargeStatus();
 
-#endif // __MAIN_H__
+#endif // __AP05_SOLAR_CHARGER_H__

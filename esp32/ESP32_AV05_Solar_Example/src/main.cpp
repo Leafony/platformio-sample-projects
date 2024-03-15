@@ -1,32 +1,56 @@
-/**
- * @file main.cpp
- * @brief
- * AV05ソーラーチャージャーリーフの電源処理を行うサンプルスケッチです。
- * バッテリーを接続し、電源ボタンを押下すると3秒間LEDが点灯し、その後消灯します。（電源ON処理）
- * 電源供給中に電源ボタンを押下し続けると、LEDが0.5秒間隔で点滅し、10秒後に電源が切れます。（電源OFF処理）
- */
+//=====================================================================
+//  Leafony Platform sample sketch
+//     Platform     : ESP32
+//     Processor    : ESP32-WROOM-32
+//     Application  : Sending Sensor Data to Google Sheets
+//
+//     Leaf configuration
+//       (1) AP02 ESP MCU
+//       (2) AI01 4-Sensors
+//
+//    (c) 2020 Trillion-Node Study Group
+//    Released under the MIT license
+//    https://opensource.org/licenses/MIT
+//
+//      Rev.00 2020/8/17  First release
+//=====================================================================
 #include <Arduino.h>
-#include <Wire.h>
-#include <ADC101C.h>
-#include <TCA9536.h>
-#include "main.h"
 
-/*********************************************************************
- * グローバルインスタンス
- *********************************************************************/
-ADC101C adc(0x50);
-TCA9536 io;
+// #define ENTERPRISE
+
+#ifdef ENTERPRISE // Enterprise
+#include <esp_wpa2.h>
+#endif
+
+#include "main.h"
+#include "ai01_4sensors.h"
+#include "av05_solar_charger.h"
+
+// Unique ID
+String UniqueID = "Leafony_A";
+
+#ifdef ENTERPRISE                        // Enterprise
+#define EAP_IDENTITY "YOUR_EAP_IDENTITY" // identity
+#define EAP_PASSWORD "YOUR_EAP_PASSWORD" // Password
+const char *SSID_ENT = "YOUR_EAP_SSID";  // Wi-Fi SSID
+#endif
+
+// Connecting WiFi Settings
+const char *SSID = "YOUR_WIFI_SSID";         // WiFi SSID
+const char *PASSWORD = "YOUR_WIFI_PASSWORD"; // WiFi Password
+
+// Accessed Google Script Settings
+const char *APP_SERVER = "script.google.com";
+const char *KEY = "YOUR_SHEET_KEY";
+
+// Device sleep time (sec) to reduce Joule heat
+uint64_t SLEEP_TIME_SEC = 60;
 
 /*********************************************************************
  * グローバル変数
  *********************************************************************/
-#if defined(ESP32)
 hw_timer_t *timer0 = NULL; // 電源投入後のLED消灯用タイマー
 hw_timer_t *timer1 = NULL; // 電源ボタン押下時のLED点滅用タイマー
-#else
-HardwareTimer *timer0 = NULL; // 電源投入後のLED消灯用タイマー
-HardwareTimer *timer1 = NULL; // 電源ボタン押下時のLED点滅用タイマー
-#endif
 
 volatile bool b_psw_pushed = false; // 電源ボタンが押されたフラグ
 
@@ -35,7 +59,8 @@ volatile uint32_t count_timer0_timeout = 0; // タイマー0タイムアウト�
 
 volatile bool b_timer1_timeout = false; // タイマー1タイムアウトフラグ
 
-#if defined(ESP32)
+volatile bool b_power_on = false; // 電源ONフラグ(電源投入処理が終わるとtrueになる)
+
 /**
  * @brief 電源ボタンが押されたときの割り込み処理
  *
@@ -62,153 +87,12 @@ void IRAM_ATTR onTimer1()
 {
   b_timer1_timeout = true;
 }
-#else
-/**
- * @brief 電源ボタンが押されたときの割り込み処理
- *
- */
-void onPowerButtonPushed()
-{
-  b_psw_pushed = true;
-}
 
 /**
- * @brief 電源ボタンLED用タイマー割り込み処理（電源ON処理用）
+ * @brief バッテリーのステータスを表示
  *
  */
-void onTimer0()
-{
-  b_timer0_timeout = true;
-}
-
-/**
- * @brief 電源ボタンLED用タイマー割り込み処理（電源OFF処理用）
- *
- */
-void onTimer1()
-{
-  b_timer1_timeout = true;
-}
-#endif // defined(ESP32)
-
-/**
- * @brief バッテリー電圧読み取り
- *
- * @return float バッテリー電圧値
- */
-float readBatteryVoltage()
-{
-  uint16_t adcVal = adc.read();
-  float dataBatt = (float)(adcVal * 3.3 / 1024 * 2);
-  delay(100);
-  return dataBatt;
-}
-
-/**
- * @brief 充電ステータス読み取り
- *
- * @return LT3652_CHARGE_STATUS_t
- */
-LT3652_CHARGE_STATUS_t getChargeStatus()
-{
-  uint8_t chrg = io.read(IOEX_I_CHRG_N_PIN);
-  uint8_t fault = io.read(IOEX_I_FAULT_N_PIN);
-  if (chrg == 0x01 && fault == 0x01)
-  {
-    return LT3652_CHARGE_STATUS_STANDBY;
-  }
-  else if (chrg == 0x00 && fault == 0x01)
-  {
-    return LT3652_CHARGE_STATUS_BATTERY_ERROR;
-  }
-  else if (chrg == 0x01 && fault == 0x00)
-  {
-    return LT3652_CHARGE_STATUS_CHARGING;
-  }
-  else if (chrg == 0x00 && fault == 0x00)
-  {
-    return LT3652_CHARGE_STATUS_OVERHEAT;
-  }
-  else
-  {
-    return LT3652_CHARGE_STATUS_UNKNOWN;
-  }
-}
-
-/**
- * @brief IOエキスパンダーを初期化
- *
- */
-bool initIoExpander()
-{
-  if (io.begin() == false)
-  {
-    Serial.println("Error: TCA9536 is not detected!");
-    return false;
-  }
-
-  // IOエキスパンダーを初期化
-  io.pinMode(IOEX_I_CHRG_N_PIN, INPUT);
-  io.pinMode(IOEX_I_FAULT_N_PIN, INPUT);
-
-  io.write(IOEX_O_ON5V_PIN, LOW);
-  io.pinMode(IOEX_O_ON5V_PIN, OUTPUT);
-
-  io.write(IOEX_O_LED_N_PIN, PSW_LED_OFF);
-  io.pinMode(IOEX_O_LED_N_PIN, OUTPUT);
-  return true;
-}
-
-/**
- * @brief 電源ボタンLEDを点灯
- *
- */
-void turnOnLed()
-{
-  io.write(IOEX_O_LED_N_PIN, PSW_LED_ON);
-}
-
-/**
- * @brief 電源ボタンLEDを消灯
- *
- */
-void turnOffLed()
-{
-  io.write(IOEX_O_LED_N_PIN, PSW_LED_OFF);
-}
-
-/**
- * @brief 電源ボタンLEDをトグル
- *
- */
-void toggleLed()
-{
-  io.toggle(IOEX_O_LED_N_PIN);
-}
-
-/**
- * @brief 5V出力をON
- *
- */
-void enable5VSupply()
-{
-  io.write(IOEX_O_ON5V_PIN, HIGH);
-}
-
-/**
- * @brief 5V出力をOFF
- *
- */
-void disable5VSupply()
-{
-  io.write(IOEX_O_ON5V_PIN, LOW);
-}
-
-/**
- * @brief
- *
- */
-void checkBatteryStatus()
+float checkBatteryStatus()
 {
   LT3652_CHARGE_STATUS_t chargeStatus;
 
@@ -229,48 +113,169 @@ void checkBatteryStatus()
 
   // 電池電圧を読取り
   float dataBatt = readBatteryVoltage();
-  Serial.print("Batt[V]  = " + String(dataBatt));
+  Serial.print("Battery  = " + String(dataBatt));
   Serial.print(", ");
 
   int pws = digitalRead(INT_PSW_N_PIN);
   Serial.println("PWS = " + String(pws));
+
+  return dataBatt;
 }
 
 /**
  * @brief
  *
+ * @param temperature
+ * @param humidity
+ * @param illumination
+ * @param dataBatt
  */
+void accessToGoogleSheets(float temperature, float humidity, float illumination, float dataBatt)
+{
+  HTTPClient http;
+  String URL = "https://script.google.com/macros/s/";
+
+  URL += KEY;
+  URL += "/exec?";
+  URL += "UniqueID=";
+  URL += UniqueID;
+  URL += "&temperature=";
+  URL += temperature;
+  URL += "&humidity=";
+  URL += humidity;
+  URL += "&illumination=";
+  URL += illumination;
+#if 1
+  URL += "&Battery=";
+  URL += dataBatt;
+#endif
+
+  Serial.println("[HTTP] begin...");
+  Serial.println(URL);
+  // access to your Google Sheets
+  Serial.println();
+  // configure target server and url
+  http.begin(URL);
+
+  Serial.println("[HTTP] GET...");
+  // start connection and send HTTP header
+  int httpCode = http.GET();
+
+  // httpCode will be negative on error
+  if (httpCode > 0)
+  {
+    // HTTP header has been send and Server response header has been handled
+    Serial.print("[HTTP] GET... code: ");
+    Serial.println(httpCode);
+
+    // file found at server
+    if (httpCode == HTTP_CODE_OK)
+    {
+      String payload = http.getString();
+      Serial.println(payload);
+    }
+  }
+  else
+  {
+    Serial.print("[HTTP] GET... failed, error: ");
+    Serial.println(http.errorToString(httpCode).c_str());
+  }
+}
+
+/**
+ * @brief ESP32 start light sleep
+ *
+ */
+void espLightSleep(int period)
+{
+  Serial.print("sleeping ");
+  Serial.print(period);
+  Serial.println(" sec...");
+  Serial.flush();
+
+  // 電源ボタン割り込みを無効化
+  detachInterrupt(INT_PSW_N_PIN);
+
+  // タイマー割り込みでウェイクアップ
+  esp_sleep_enable_timer_wakeup(period * 1000 * 1000); // set deep sleep time
+  // 電源ボタンが押された時のウェイクアップを有効化
+  // 電源ボタンが押されたら電源LEDの処理をするために必要
+  gpio_wakeup_enable((gpio_num_t)INT_PSW_N_PIN, GPIO_INTR_LOW_LEVEL);
+  esp_sleep_enable_gpio_wakeup();
+  // スリープ
+  esp_light_sleep_start();
+}
+
+/**
+ * @brief ESP32 start deep sleep
+ * After calling "esp_deep_sleep_start" function, any following codes will not be executed
+ * When restarting ESP32, all variables are restored and the program will start from the beginning
+ */
+void espDeepSleep(int period)
+{
+  Serial.print("sleeping ");
+  Serial.print(period);
+  Serial.println(" sec...");
+  Serial.flush();
+  esp_sleep_enable_timer_wakeup(period * 1000 * 1000); // set deep sleep time
+  esp_deep_sleep_start();                              // enter deep sleep
+}
+
+void mainTask()
+{
+  // センサデータを読み出し
+  float temperature = readTemperature();
+  float humidity = readHumidity();
+  float illumination = readIllumination();
+  float dataBatt = readBatteryVoltage();
+
+  Serial.print("\ntemperature : ");
+  Serial.println(temperature);
+  Serial.print("humidity    : ");
+  Serial.println(humidity);
+  Serial.print("illumination  : ");
+  Serial.println(illumination);
+  Serial.print("Battery  : ");
+  Serial.println(dataBatt);
+
+  // send sensor values to google sheets
+#if 1
+  accessToGoogleSheets(temperature, humidity, illumination, dataBatt);
+#else
+  accessToGoogleSheets(temperature, humidity, illumination);
+#endif
+
+  // WiFi Connection killed
+  Serial.println("\nWiFi is disconnected");
+  WiFi.disconnect();
+}
+
+/************************************************************************
+ * 初期化
+ ************************************************************************/
 void setup()
 {
+  // WiFi connection controlling parameters
+  int statusCheckCounter = 0;
+  const int CHECK_NUM_MAX = 100;
+
   Serial.begin(115200);
-  while (!Serial)
-  {
-    ;
-  }
 
-  Wire.begin();
+  // センサリーフを初期化
+  initSensors();
 
-  // ADCを初期化
-  if (!adc.begin())
+  // ソーラーチャージャーリーフを初期化
+  if (!initAv05SolarCharger())
   {
-    Serial.println("Error: ADC101C is not connected! Freezing...");
     return;
   }
 
-  // IOエキスパンダーを初期化
-  if (initIoExpander() == false)
-  {
-    Serial.println("Failed to initialize IO expander. Freezing...");
-    return;
-  }
-
-  // 電源ボタン割り込みを有効化
+  // 割り込みピンを初期化
   pinMode(INT_PSW_N_PIN, INPUT);
-  attachInterrupt(INT_PSW_N_PIN, onPowerButtonPushed, RISING);
 
-  turnOnLed(); // 電源ボタンLEDを点灯
+  // 電源ボタンLEDを点灯
+  turnOnLed();
 
-#if defined(ESP32)
   // 電源ボタンを一定期間後に消灯させるタイマーを設定
   timer0 = timerBegin(0, 80, true);                  // 80サイクルで1カウント = 1us
   timerAttachInterrupt(timer0, &onTimer0, true);     // 割り込み関数を登録
@@ -281,32 +286,52 @@ void setup()
   timer1 = timerBegin(1, 80, true);                  // 80サイクルで1カウント = 1us
   timerAttachInterrupt(timer1, &onTimer1, true);     // 割り込み関数を登録
   timerAlarmWrite(timer1, 0.5 * 1000 * 1000, false); // 0.5秒間隔で割り込み開始
-#else
-  // 電源ボタンを一定期間後に消灯させるタイマーを設定
-  timer0 = new HardwareTimer(TIM1);
-  timer0->setMode(1, TIMER_OUTPUT_COMPARE);
-  timer0->setOverflow(2, HERTZ_FORMAT); // 0.5秒間隔で割り込み
-  timer0->attachInterrupt(onTimer0);    // 割り込み関数を登録
-  timer0->resume();                     // カウント開始
-
-  // 電源ボタンを一定間隔で点滅させるタイマーを設定
-  timer1 = new HardwareTimer(TIM2);
-  timer1->setMode(1, TIMER_OUTPUT_COMPARE);
-  timer1->setOverflow(2, HERTZ_FORMAT);
-  timer1->attachInterrupt(onTimer1);
-#endif // defined(ESP32)
 
   enable5VSupply(); // 5V出力をON
 
-  delay(10);
+  /**
+   * WiFiを初期化
+   */
+#ifdef ENTERPRISE // Enterprise
+  WiFi.mode(WIFI_STA);
+  esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY)); // provide identity
+  esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY)); // provide username --> identity and username is same
+  esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD)); // provide password
+  esp_wifi_sta_wpa2_ent_enable();
+  WiFi.begin(SSID_ENT); // connect to wifi
+#else
+  WiFi.begin(SSID, PASSWORD);
+#endif
+
+  Serial.print("WiFi connecting");
+  // Wait until succeed connecting.
+  // If the number of checks is more than CHECK_NUM_MAX, give up connecting and
+  // start deepsleep to prevent Joule heat from affecting next measurements.
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    if (statusCheckCounter > CHECK_NUM_MAX)
+    {
+      WiFi.disconnect();
+      Serial.println("failed");
+      espDeepSleep(60);
+    }
+    delay(500);
+    statusCheckCounter++;
+  }
+  Serial.println("\nconnected");
 }
 
+/************************************************************************
+ * メインループ
+ ************************************************************************/
 void loop()
 {
+  // 電源ボタン割り込みを有効化
+  attachInterrupt(INT_PSW_N_PIN, onPowerButtonPushed, RISING);
 
-  /**
+  /************************************************************************
    * 電源ON時のタイマー割り込み処理
-   */
+   ************************************************************************/
   if (b_timer0_timeout == true) // 0.5秒でタイムアウト
   {
     b_timer0_timeout = false;
@@ -315,29 +340,24 @@ void loop()
     // 電源投入後、一定期間経過後、電源ボタンLEDを消灯
     if (count_timer0_timeout >= 3 * 2 /* 3秒 * 2Hz */)
     {
+      // 電源ON処理完了
+      b_power_on = true;
+
       // 電源ボタンLEDを消灯
-      io.write(IOEX_O_LED_N_PIN, PSW_LED_OFF);
+      turnOffLed();
       count_timer0_timeout = 0;
 
       // タイマーを停止
-#if defined(ESP32)
       timerAlarmDisable(timer0);
-#else
-      timer0->pause();
-#endif // defined(ESP32)
     }
 
-#if defined(ESP32)
     timerWrite(timer0, 0); // タイマーをリセット
     timerAlarmEnable(timer0);
-#else
-    // NOP
-#endif // defined(ESP32)
   }
 
-  /**
+  /************************************************************************
    * 電源ボタンが押された時の処理
-   */
+   ************************************************************************/
   if (b_psw_pushed == true)
   {
     b_psw_pushed = false;
@@ -345,16 +365,12 @@ void loop()
     delay(100); // チャタリング対策で一定時間待つ
 
     // LED点滅用タイマーを有効化
-#if defined(ESP32)
     timerAlarmEnable(timer1);
-#else
-    timer1->resume();
-#endif // defined(ESP32)
   }
 
-  /**
+  /************************************************************************
    * 電源OFF時のタイマー割り込み処理
-   */
+   ************************************************************************/
   if (b_timer1_timeout == true) // 0.5秒でタイムアウト
   {
     b_timer1_timeout = false;
@@ -372,18 +388,23 @@ void loop()
       turnOffLed();
     }
 
-#if defined(ESP32)
     timerWrite(timer1, 0); // タイマーをリセット
     timerAlarmEnable(timer1);
-#else
-    // NOP
-#endif // defined(ESP32)
   }
 
-  // バッテリーリーフの状態をシリアルに出力
-  checkBatteryStatus();
+  /************************************************************************
+   * 電源ボタンが押されていない場合のみメイン処理を実行しスリープ
+   ************************************************************************/
+  if (digitalRead(INT_PSW_N_PIN) == PSW_RELEASED && b_power_on == true)
+  {
+    // 電源ボタンLEDを消灯
+    turnOffLed();
 
-  /**
-   * 以下、任意の処理を追加してください
-   */
+    // メイン処理を実行
+    mainTask();
+
+    // ESP32をスリープさせる
+    // ウェイクアップ後再びloop関数から実行させるためlight sleepにする
+    espLightSleep(SLEEP_TIME_SEC);
+  }
 }
