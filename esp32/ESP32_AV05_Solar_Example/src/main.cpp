@@ -186,16 +186,18 @@ void accessToGoogleSheets(float temperature, float humidity, float illumination,
  * @brief ESP32 start light sleep
  *
  */
-void espLightSleep()
+void espLightSleep(int period)
 {
-  Serial.println("sleeping...");
+  Serial.print("sleeping ");
+  Serial.print(period);
+  Serial.println(" sec...");
   Serial.flush();
 
   // 電源ボタン割り込みを無効化
   detachInterrupt(INT_PSW_N_PIN);
 
   // タイマー割り込みでウェイクアップ
-  esp_sleep_enable_timer_wakeup(SLEEP_TIME_SEC * 1000 * 1000); // set deep sleep time
+  esp_sleep_enable_timer_wakeup(period * 1000 * 1000); // set deep sleep time
   // 電源ボタンが押された時のウェイクアップを有効化
   // 電源ボタンが押されたら電源LEDの処理をするために必要
   gpio_wakeup_enable((gpio_num_t)INT_PSW_N_PIN, GPIO_INTR_LOW_LEVEL);
@@ -209,12 +211,14 @@ void espLightSleep()
  * After calling "esp_deep_sleep_start" function, any following codes will not be executed
  * When restarting ESP32, all variables are restored and the program will start from the beginning
  */
-void espDeepSleep()
+void espDeepSleep(int period)
 {
-  Serial.println("sleeping...");
+  Serial.print("sleeping ");
+  Serial.print(period);
+  Serial.println(" sec...");
   Serial.flush();
-  esp_sleep_enable_timer_wakeup(SLEEP_TIME_SEC * 1000 * 1000); // set deep sleep time
-  esp_deep_sleep_start();                                      // enter deep sleep
+  esp_sleep_enable_timer_wakeup(period * 1000 * 1000); // set deep sleep time
+  esp_deep_sleep_start();                              // enter deep sleep
 }
 
 void mainTask()
@@ -309,8 +313,7 @@ void setup()
     {
       WiFi.disconnect();
       Serial.println("failed");
-      Serial.println("Deepsleep Start");
-      espDeepSleep();
+      espDeepSleep(60);
     }
     delay(500);
     statusCheckCounter++;
@@ -394,11 +397,14 @@ void loop()
    ************************************************************************/
   if (digitalRead(INT_PSW_N_PIN) == PSW_RELEASED && b_power_on == true)
   {
+    // 電源ボタンLEDを消灯
+    turnOffLed();
+
     // メイン処理を実行
     mainTask();
 
     // ESP32をスリープさせる
     // ウェイクアップ後再びloop関数から実行させるためlight sleepにする
-    espLightSleep();
+    espLightSleep(SLEEP_TIME_SEC);
   }
 }
