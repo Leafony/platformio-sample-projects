@@ -1,4 +1,4 @@
-# STM32 LoRa Basic
+# STM32 LoRa Transmitter
 
 AC07 LoRa Mary でデータ送信を行うシンプルなプロジェクト
 

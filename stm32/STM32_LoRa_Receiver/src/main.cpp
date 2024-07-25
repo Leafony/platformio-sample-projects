@@ -5,14 +5,20 @@
 #include <LoRa.h>
 #include <SoftwareSerial.h>
 
+// IOエキスパンダーのピン番号
 #define IOEX_PIN_0 0
 #define IOEX_PIN_1 1
+#define IOEX_PIN_2 2
+#define IOEX_PIN_3 3
 
+// LoRaのピン番号
 #define LORA_BOOT0 IOEX_PIN_0
-#define LORA_RESET IOEX_PIN_1
+#define LORA_RESET IOEX_PIN_2
 #define LORA_IRQ_DUMB D10
 #define LORA_RF_IRQ D5
 
+// LoRa周波数
+// 日本国内で使用する場合は必ず923MHzを使用してください。
 #define LORA_FREQUENCY 923E6
 
 void SystemClock_Config(void);

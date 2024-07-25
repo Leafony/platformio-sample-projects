@@ -5,12 +5,20 @@
 #include <LoRa.h>
 #include <SoftwareSerial.h>
 
+// IOエキスパンダーのピン番号
 #define IOEX_PIN_0 0
 #define IOEX_PIN_1 1
+#define IOEX_PIN_2 2
+#define IOEX_PIN_3 3
 
+// LoRaのピン番号
 #define LORA_BOOT0 IOEX_PIN_0
-#define LORA_RESET IOEX_PIN_1
+#define LORA_RESET IOEX_PIN_2
 #define LORA_IRQ_DUMB D10
+
+// LoRa周波数
+// 日本国内で使用する場合は必ず923MHzを使用してください。
+#define LORA_FREQUENCY 923E6 // AS923
 
 void SystemClock_Config(void);
 void resetLoRa(bool path_through);
@@ -60,7 +68,7 @@ void setup()
   while (!Serial)
     ;
 
-  Serial.println("LoRa Basic Example");
+  Serial.println("LoRa Transmitter Example");
 
   Wire.begin();
 
@@ -80,9 +88,8 @@ void setup()
   resetLoRa(false);
   resetLoRa(true);
 
-  // 923MHzでLoRaを初期化
-  // 日本国内で使用する場合は必ず923MHzを使用してください。
-  if (LoRa.begin(923E6) == false)
+  // LoRaを初期化
+  if (LoRa.begin(LORA_FREQUENCY) == false)
   {
     Serial.println("Starting LoRa failed!");
     while (1)
