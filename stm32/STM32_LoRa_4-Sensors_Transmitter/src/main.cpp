@@ -162,10 +162,11 @@ void wakeupSensors()
   newConfig.RangeNumber = B1100;             // automatic full scale
   newConfig.ModeOfConversionOperation = B01; // single-shot conversion
   errorConfig = light.writeConfig(newConfig);
-  delay(300);
 
   // LIS2DH wakeup
   accel.setDataRate(LIS3DH_DATARATE_10_HZ); // Data rate = 10Hz
+
+  delay(300);
 }
 
 /**
@@ -186,7 +187,7 @@ void sendPacket()
   // battery
   float batt = 0;
 
-  DEBUG_SERIAL.print("Sending packet... ");
+  DEBUG_SERIAL.println("Sending packet... ");
 
   // センサを立ち上げ
   wakeupSensors();
@@ -197,6 +198,10 @@ void sendPacket()
   humid = (float)smeHumidity.readHumidity();
   temp = TM0 + (TM1 - TM0) * (temp - TL0) / (TL1 - TL0);   // 温度補正
   humid = HM0 + (HM1 - HM0) * (humid - HL0) / (HL1 - HL0); // 湿度補正
+  if (humid > 100)
+  {
+    humid = 100;
+  }
 
   // 照度読み出し
   OPT3001 result = light.readResult();
@@ -218,19 +223,35 @@ void sendPacket()
   LoRa.beginPacket();
   LoRa.write(0xFF);
   LoRa.print(batt);
-  LoRa.print(',');
+  LoRa.print("V,");
   LoRa.print(temp);
-  LoRa.print(',');
+  LoRa.print("℃,");
   LoRa.print(humid);
-  LoRa.print(',');
+  LoRa.print("%,");
   LoRa.print(illum);
-  LoRa.print(',');
+  LoRa.print("lx,");
   LoRa.print(x_g);
-  LoRa.print(',');
+  LoRa.print("g,");
   LoRa.print(y_g);
-  LoRa.print(',');
+  LoRa.print("g,");
   LoRa.print(z_g);
+  LoRa.print("g");
   LoRa.endPacket();
+
+  DEBUG_SERIAL.print(batt);
+  DEBUG_SERIAL.print("V,");
+  DEBUG_SERIAL.print(temp);
+  DEBUG_SERIAL.print("℃,");
+  DEBUG_SERIAL.print(humid);
+  DEBUG_SERIAL.print("%,");
+  DEBUG_SERIAL.print(illum);
+  DEBUG_SERIAL.print("lx,");
+  DEBUG_SERIAL.print(x_g);
+  DEBUG_SERIAL.print("g,");
+  DEBUG_SERIAL.print(y_g);
+  DEBUG_SERIAL.print("g,");
+  DEBUG_SERIAL.print(z_g);
+  DEBUG_SERIAL.println("g");
 
   DEBUG_SERIAL.println("end!");
 }
@@ -292,6 +313,9 @@ void setup()
   }
   LoRa.enableCrc();               // CRCを有効化
   LoRa.setTxPower(LORA_TX_POWER); // 送信電力を設定
+
+  // センサーを初期化
+  initSensors();
 
   DEBUG_SERIAL.println("Successfully started!");
 }
