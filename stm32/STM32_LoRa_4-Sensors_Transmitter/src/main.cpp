@@ -311,6 +311,10 @@ void setup()
     while (1)
       ;
   }
+
+  // LoRa通信設定
+  LoRa.setSpreadingFactor(LORA_SPREADING_FACTOR);
+  LoRa.setSignalBandwidth(LORA_SIGNAL_BANDWIDTH);
   LoRa.enableCrc();               // CRCを有効化
   LoRa.setTxPower(LORA_TX_POWER); // 送信電力を設定
 

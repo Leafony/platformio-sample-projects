@@ -27,6 +27,10 @@
 
 // LoRa周波数
 #define LORA_FREQUENCY 923E6 // AS923
+// LoRa SF
+#define LORA_SPREADING_FACTOR 7 // 6-12の間で設定可能 https://github.com/sandeepmistry/arduino-LoRa/blob/master/API.md#spreading-factor
+// LoRa Bandwidth
+#define LORA_SIGNAL_BANDWIDTH 125E3 // https://github.com/sandeepmistry/arduino-LoRa/blob/master/API.md#signal-bandwidth
 // LoRa送信電力
 #define LORA_TX_POWER 17 // dBm
 

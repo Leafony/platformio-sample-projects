@@ -19,7 +19,10 @@
 
 // LoRa周波数
 // 日本国内で使用する場合は必ず923MHzを使用してください。
-#define LORA_FREQUENCY 923E6
+#define LORA_FREQUENCY 923E6        // AS923 https://github.com/sandeepmistry/arduino-LoRa/blob/master/API.md#frequency
+#define LORA_SPREADING_FACTOR 7     // 6-12の間で設定可能 https://github.com/sandeepmistry/arduino-LoRa/blob/master/API.md#spreading-factor
+#define LORA_SIGNAL_BANDWIDTH 125E3 // https://github.com/sandeepmistry/arduino-LoRa/blob/master/API.md#signal-bandwidth
+#define LORA_GAIN 0                 // 0-6の間で設定可能 https://github.com/sandeepmistry/arduino-LoRa/blob/master/API.md#lna-gain
 
 void SystemClock_Config(void);
 void resetLoRa(bool path_through);
@@ -124,6 +127,10 @@ void setup()
     delay(1000);
   }
 
+  // LoRa通信設定
+  LoRa.setSpreadingFactor(LORA_SPREADING_FACTOR);
+  LoRa.setSignalBandwidth(LORA_SIGNAL_BANDWIDTH);
+  LoRa.setGain(LORA_GAIN);
   LoRa.enableCrc();
 
   // register the receive callback
